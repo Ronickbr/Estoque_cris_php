@@ -1,0 +1,632 @@
+/* Estilos personalizados para o Gerenciador de Estoque */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+footer {
+    margin-top: auto;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Status de estoque */
+.estoque-baixo {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.estoque-medio {
+    color: #fd7e14;
+}
+
+.estoque-alto {
+    color: #198754;
+}
+
+/* Animações */
+.fade-in {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsividade para tabelas */
+@media (max-width: 767.98px) {
+    .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/* Estilização dos Cards de Resumo */
+.summary-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-radius: 15px;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.summary-card .icon-bg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+}
+
+.summary-card h2 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+}
+
+.summary-card h6 {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.summary-card small {
+    font-size: 0.75rem;
+}
+
+/* Animação suave ao carregar */
+.summary-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .summary-card h2 {
+        font-size: 2rem;
+    }
+    
+    .summary-card .icon-bg {
+        width: 50px;
+        height: 50px;
+    }
+}
+/* Estilização do Alerta de Estoque Baixo - Versão Melhorada */
+.stock-alert-card {
+    border: none;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(220, 53, 69, 0.12);
+    overflow: hidden;
+}
+
+.stock-alert-card .card-header {
+    background: linear-gradient(45deg, #dc3545, #ff4d5d);
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.manufacturer-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.manufacturer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.manufacturer-card .card-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    position: relative;
+}
+
+.manufacturer-card .items-count {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+}
+
+.manufacturer-card .list-group-item {
+    padding: 0.8rem 1rem;
+    border-left: none;
+    border-right: none;
+    transition: background-color 0.3s ease;
+}
+
+.manufacturer-card .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.product-info {
+    width: 100%;
+}
+
+.product-name {
+    font-size: 0.9rem;
+    color: #495057;
+    max-width: 65%;
+}
+
+.manufacturer-card .badge {
+    font-weight: 500;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.manufacturer-card .badge.bg-danger {
+    background: linear-gradient(45deg, #dc3545, #ff4d5d) !important;
+    animation: pulse 2s infinite;
+}
+
+.manufacturer-card .badge.bg-warning {
+    background: linear-gradient(45deg, #ffc107, #ffcd39) !important;
+    color: #000;
+}
+
+.manufacturer-card .progress {
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.manufacturer-card .progress-bar {
+    transition: width 0.6s ease;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    .manufacturer-card .card-header {
+        padding: 0.8rem;
+    }
+    
+    .product-name {
+        max-width: 55%;
+        font-size: 0.85rem;
+    }
+    
+    .manufacturer-card .badge {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+    }
+}
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f4f6f9;
+}
+.sidebar {
+    width: 250px;
+    background: linear-gradient(180deg, #ffffff, #e9ecef);
+    border-right: 1px solid #dee2e6;
+    padding: 1rem 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+.sidebar .logo {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #28a745;
+}
+.sidebar .nav-link {
+    color: #495057;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+.sidebar .nav-link:hover {
+    background-color: #28a745;
+    color: #fff;
+    transform: translateX(5px);
+}
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+.sidebar .user-section {
+    position: absolute;
+    bottom: 1rem;
+    width: 100%;
+    padding: 0 1rem;
+}
+.content {
+    margin-left: 250px;
+    padding: 2rem;
+    flex: 1;
+}
+.content .row {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+footer {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+    text-align: center;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Estilização Geral para Cards */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+.card-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Estilização dos Cards de Resumo (Dashboard) */
+.summary-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+.summary-card .card-body {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+.summary-card .icon-wrapper {
+    font-size: 2.5rem;
+    color: #28a745;
+    margin-right: 1rem;
+}
+.summary-card h5 {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+.summary-card h3 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+}
+.summary-card p {
+    font-size: 0.9rem;
+    color: #adb5bd;
+    margin: 0;
+}
+
+/* Estilização dos Produtos Mais Vendidos (Dashboard) */
+.best-seller-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    transition: transform 0.3s ease;
+}
+.best-seller-card:hover {
+    transform: translateY(-5px);
+}
+.best-seller-card .card-body {
+    padding: 1.5rem;
+}
+.best-seller-card h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 1rem;
+}
+.best-seller-card .list-group-item {
+    border: none;
+    padding: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.best-seller-card .progress {
+    height: 8px;
+    margin-top: 0.5rem;
+    background-color: #e9ecef;
+}
+.best-seller-card .progress-bar {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+.best-seller-card .badge {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+}
+.best-seller-card .badge:hover {
+    transform: scale(1.1);
+}
+
+/* Estilização do Alerta de Estoque Baixo (Dashboard) */
+.stock-alert-card {
+    border: 2px solid #dc3545;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+.stock-alert-card .card-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+.stock-alert-card h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.stock-alert-card .card-body {
+    padding: 1.5rem;
+}
+.stock-alert-card .manufacturer-card {
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    transition: transform 0.3s ease;
+}
+.stock-alert-card .manufacturer-card:hover {
+    transform: translateY(-3px);
+}
+.stock-alert-card .manufacturer-card .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+.stock-alert-card .manufacturer-card h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+}
+.stock-alert-card .list-group-item {
+    border: none;
+    padding: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.stock-alert-card .product-name {
+    max-width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.stock-alert-card .badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    flex-shrink: 0;
+}
+.stock-alert-card .badge.bg-danger {
+    animation: blink 1.5s infinite;
+}
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+
+/* Cards de Alerta de Estoque */
+.stock-alert-card {
+    border: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.manufacturer-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+}
+
+.manufacturer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+.manufacturer-card .card-header {
+    border-bottom: 2px solid rgba(0,0,0,0.05);
+}
+
+.manufacturer-card .list-group-item {
+    transition: background-color 0.2s;
+    border-left: none;
+    border-right: none;
+}
+
+.manufacturer-card .list-group-item:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.manufacturer-card .product-name {
+    max-width: 65%;
+    font-size: 0.9rem;
+}
+
+.manufacturer-card .badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.manufacturer-card .progress {
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 10px;
+}
+
+.manufacturer-card .progress-bar {
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.stock-alert-card .card-header i {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Estilos para os cards de fabricantes */
+.manufacturer-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.manufacturer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.manufacturer-card .card-header {
+    background: linear-gradient(45deg, #f8f9fa, #ffffff);
+}
+
+.manufacturer-card .manufacturer-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 8px;
+}
+
+.manufacturer-card .list-group-item {
+    transition: background-color 0.2s ease;
+}
+
+.manufacturer-card .list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.manufacturer-card .progress {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.manufacturer-card .badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.manufacturer-card .product-name {
+    color: #2c3e50;
+    max-width: 200px;
+}
+
+.manufacturer-card small.text-muted {
+    font-size: 0.8rem;
+}
+
+/* Estilização da Tabela de Produtos (Página de Produtos) */
+.table-products th:nth-child(1),
+.table-products td:nth-child(1) {
+    max-width: 300px;
+}
+.table-products .product-name {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    .content {
+        margin-left: 200px;
+    }
+    .summary-card .card-body {
+        flex-direction: column;
+        text-align: center;
+    }
+    .summary-card .icon-wrapper {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    .stock-alert-card .product-name {
+        max-width: 60%;
+    }
+    .table-products th:nth-child(1),
+    .table-products td:nth-child(1) {
+        max-width: 200px;
+    }
+}
+
+/* Estilos para ícones circulares nos cards de resumo */
+.icon-bg {
+    width: 48px;
+    height: 48px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.summary-card:hover .icon-bg {
+    transform: scale(1.1);
+}
+
+.icon-bg i {
+    font-size: 1.5rem;
+}
