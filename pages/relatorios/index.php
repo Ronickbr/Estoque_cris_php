@@ -32,11 +32,19 @@ try {
 
 // Buscar produtos
 try {
-    $sql = "SELECT p.id, p.name, p.manufacturer_id FROM products p JOIN manufacturers m ON p.manufacturer_id = m.id";
+    $sql = "SELECT p.id, p.name, p.manufacturer_id, 
+           (COALESCE(SUM(CASE WHEN im.type = 'entrada' THEN im.quantity ELSE 0 END), 0) -
+            COALESCE(SUM(CASE WHEN im.type = 'saida' THEN im.quantity ELSE 0 END), 0)) as current_stock
+           FROM products p 
+           LEFT JOIN manufacturers mf ON p.manufacturer_id = mf.id
+           LEFT JOIN inventory_movements im ON p.id = im.product_id
+           WHERE 1=1";
+    
     if ($manufacturer_id) {
-        $sql .= " WHERE p.manufacturer_id = " . $conn->quote($manufacturer_id);
+        $sql .= " AND p.manufacturer_id = " . $conn->quote($manufacturer_id);
     }
-    $sql .= " ORDER BY p.name ASC";
+    
+    $sql .= " GROUP BY p.id, p.name, p.manufacturer_id ORDER BY p.name ASC";
     
     $stmtProducts = $conn->query($sql);
     $products = $stmtProducts->fetchAll(PDO::FETCH_ASSOC);
@@ -310,6 +318,32 @@ include __DIR__ . '/../../includes/header.php';
         padding: 0.2rem 0.4rem;
     }
 }
+
+/* Estilos adicionais */
+.product-option-with-stock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stock-indicator {
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+}
+
+.stock-zero {
+    color: #dc3545;
+}
+
+.product-select option[data-stock="0"] {
+    color: #dc3545;
+}
+
+.product-select {
+    font-family: monospace;
+}
 </style>
 
 <div class="content">
@@ -375,7 +409,7 @@ include __DIR__ . '/../../includes/header.php';
                                     <select name="types[]" class="form-select" required>
                                         <option value="">Selecione...</option>
                                         <option value="entrada">Entrada</option>
-                                        <option value="saida">Saída</option>
+                                        <option value="saida" selected>Saída</option>
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-2">
@@ -606,7 +640,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const template = document.querySelector('.linha-movimentacao').cloneNode(true);
         template.querySelectorAll('input, select').forEach(input => {
             if (input.type !== 'date') {
-                input.value = '';
+                if (input.name === 'types[]') {
+                    input.value = 'saida'; // Define saída como padrão
+                } else {
+                    input.value = '';
+                }
             } else {
                 input.value = '<?php echo date('Y-m-d'); ?>';
             }
@@ -628,7 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Array com todos os produtos
     const allProducts = <?php echo json_encode($products); ?>;
 
-    // Função para filtrar produtos por fabricante
+    // Substituir a função filterProducts existente por:
     function filterProducts(manufacturerId, productSelect) {
         const filteredProducts = manufacturerId 
             ? allProducts.filter(p => p.manufacturer_id === manufacturerId)
@@ -638,13 +676,59 @@ document.addEventListener('DOMContentLoaded', function() {
         
         filteredProducts.forEach(p => {
             const option = document.createElement('option');
+            const stock = parseInt(p.current_stock) || 0;
+            
             option.value = p.id;
-            option.textContent = p.name;
+            option.innerHTML = `${p.name.padEnd(30)} [${stock}]`;
+            option.dataset.stock = stock;
+            
+            if (stock === 0) {
+                option.classList.add('stock-zero');
+                option.style.color = '#dc3545';
+            }
+            
             productSelect.appendChild(option);
         });
         
         productSelect.disabled = !manufacturerId;
     }
+
+    // Adicionar listener para quando um produto é selecionado
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-select')) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const stock = parseInt(selectedOption.dataset.stock) || 0;
+            const typeSelect = e.target.closest('.linha-movimentacao').querySelector('select[name="types[]"]');
+            const quantityInput = e.target.closest('.linha-movimentacao').querySelector('input[name="quantities[]"]');
+            
+            if (typeSelect.value === 'saida') {
+                quantityInput.max = stock;
+                quantityInput.placeholder = `Máximo: ${stock}`;
+            } else {
+                quantityInput.removeAttribute('max');
+                quantityInput.placeholder = 'Quantidade';
+            }
+        }
+    });
+
+    // Adicionar listener para quando o tipo de movimentação é alterado
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.includes('types')) {
+            const linha = e.target.closest('.linha-movimentacao');
+            const productSelect = linha.querySelector('.product-select');
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const stock = parseInt(selectedOption.dataset.stock) || 0;
+            const quantityInput = linha.querySelector('input[name="quantities[]"]');
+            
+            if (e.target.value === 'saida') {
+                quantityInput.max = stock;
+                quantityInput.placeholder = `Máximo: ${stock}`;
+            } else {
+                quantityInput.removeAttribute('max');
+                quantityInput.placeholder = 'Quantidade';
+            }
+        }
+    });
 
     // Adicionar listener para selects de fabricante
     document.addEventListener('change', function(e) {
