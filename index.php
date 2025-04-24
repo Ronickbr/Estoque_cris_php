@@ -10,7 +10,7 @@ verificarLogin();
 try {
     // Vendas hoje (últimas 24h)
     $stmtVendasHoje = $conn->query("
-        SELECT COUNT(*) as total 
+        SELECT COALESCE(SUM(quantity), 0) as total 
         FROM inventory_movements 
         WHERE type = 'saida' 
         AND created_at >= NOW() - INTERVAL 1 DAY
@@ -19,7 +19,7 @@ try {
 
     // Vendas na semana (últimos 7 dias)
     $stmtVendasSemana = $conn->query("
-        SELECT COUNT(*) as total 
+        SELECT COALESCE(SUM(quantity), 0) as total 
         FROM inventory_movements 
         WHERE type = 'saida' 
         AND created_at >= NOW() - INTERVAL 7 DAY
@@ -28,7 +28,7 @@ try {
 
     // Vendas no mês (últimos 30 dias)
     $stmtVendasMes = $conn->query("
-        SELECT COUNT(*) as total 
+        SELECT COALESCE(SUM(quantity), 0) as total 
         FROM inventory_movements 
         WHERE type = 'saida' 
         AND created_at >= NOW() - INTERVAL 30 DAY
@@ -37,7 +37,7 @@ try {
 
     // Dia com mais vendas (baseado nos últimos 30 dias)
     $stmtDiaMaisVendas = $conn->query("
-        SELECT DAYNAME(created_at) as dia, COUNT(*) as total 
+        SELECT DAYNAME(created_at) as dia, COALESCE(SUM(quantity), 0) as total 
         FROM inventory_movements 
         WHERE type = 'saida' 
         AND created_at >= NOW() - INTERVAL 30 DAY 
@@ -403,149 +403,162 @@ try {
 
     <!-- Cards de Resumo -->
     <div class="row mb-5">
-        <div class="col-12 col-md-6 col-lg-3 mb-4">
-            <div class="card summary-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-wrapper me-3">
-                        <i class="bi bi-cart-check-fill"></i>
-                    </div>
-                    <div>
-                        <h5 class="card-title">Vendas Hoje</h5>
-                        <h3><?php echo $vendasHoje; ?></h3>
-                        <p class="card-text">Produtos vendidos nas últimas 24h</p>
-                    </div>
-                </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+    <div class="card summary-card">
+        <div class="card-body d-flex align-items-center">
+            <div class="icon-wrapper me-3">
+                <i class="bi bi-cart-check-fill"></i>
+            </div>
+            <div>
+                <h5 class="card-title">Vendas Hoje</h5>
+                <h3><?php echo $vendasHoje; ?></h3>
+                <p class="card-text">Unidades vendidas nas últimas 24h</p>
             </div>
         </div>
-        <div class="col-12 col-md-6 col-lg-3 mb-4">
-            <div class="card summary-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-wrapper me-3">
-                        <i class="bi bi-calendar-week-fill"></i>
-                    </div>
-                    <div>
-                        <h5 class="card-title">Vendas na Semana</h5>
-                        <h3><?php echo $vendasSemana; ?></h3>
-                        <p class="card-text">Produtos vendidos nos últimos 7 dias</p>
-                    </div>
-                </div>
+    </div>
+</div>
+<div class="col-12 col-md-6 col-lg-3 mb-4">
+    <div class="card summary-card">
+        <div class="card-body d-flex align-items-center">
+            <div class="icon-wrapper me-3">
+                <i class="bi bi-calendar-week-fill"></i>
+            </div>
+            <div>
+                <h5 class="card-title">Vendas na Semana</h5>
+                <h3><?php echo $vendasSemana; ?></h3>
+                <p class="card-text">Unidades vendidas nos últimos 7 dias</p>
             </div>
         </div>
-        <div class="col-12 col-md-6 col-lg-3 mb-4">
-            <div class="card summary-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-wrapper me-3">
-                        <i class="bi bi-calendar-month-fill"></i>
-                    </div>
-                    <div>
-                        <h5 class="card-title">Vendas no Mês</h5>
-                        <h3><?php echo $vendasMes; ?></h3>
-                        <p class="card-text">Produtos vendidos nos últimos 30 dias</p>
-                    </div>
-                </div>
+    </div>
+</div>
+<div class="col-12 col-md-6 col-lg-3 mb-4">
+    <div class="card summary-card">
+        <div class="card-body d-flex align-items-center">
+            <div class="icon-wrapper me-3">
+                <i class="bi bi-calendar-month-fill"></i>
+            </div>
+            <div>
+                <h5 class="card-title">Vendas no Mês</h5>
+                <h3><?php echo $vendasMes; ?></h3>
+                <p class="card-text">Unidades vendidas nos últimos 30 dias</p>
             </div>
         </div>
-        <div class="col-12 col-md-6 col-lg-3 mb-4">
-            <div class="card summary-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-wrapper me-3">
-                        <i class="bi bi-trophy-fill"></i>
+    </div>
+</div>
+<div class="col-12 col-md-6 col-lg-3 mb-4">
+    <div class="card summary-card">
+        <div class="card-body d-flex align-items-center">
+            <div class="icon-wrapper me-3">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+            <div>
+                <h5 class="card-title">Dia com Mais Vendas</h5>
+                <h3><?php echo $diaMaisVendasNome; ?></h3>
+                <p class="card-text"><?php echo $diaMaisVendas['total'] ?? 0; ?> unidades vendidas</p>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+
+    <!-- Produtos Mais Vendidos -->
+<div class="row mb-5">
+    <!-- Produtos Mais Vendidos (Hoje) -->
+    <div class="col-12 col-md-4 mb-4">
+        <div class="card best-seller-card">
+            <div class="card-body">
+                <h5 class="card-title">Produtos Mais Vendidos (Hoje)</h5>
+                <?php if (count($produtosVendidosHoje) > 0): ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($produtosVendidosHoje as $produto): ?>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="me-3">
+                                        <i class="bi bi-tag text-muted"></i>
+                                    </div>
+                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
+                                        <?php echo htmlspecialchars($produto['name']); ?>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <span class="badge bg-primary rounded-pill">
+                                        <?php echo $produto['total']; ?> un
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    <div>
-                        <h5 class="card-title">Dia com Mais Vendas</h5>
-                        <h3><?php echo $diaMaisVendasNome; ?></h3>
-                        <p class="card-text"><?php echo $vendasMes; ?> produtos vendidos</p>
-                    </div>
-                </div>
+                <?php else: ?>
+                    <p class="text-muted mb-0">Nenhuma venda hoje</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- Produtos Mais Vendidos -->
-    <div class="row mb-5">
-        <div class="col-12 col-md-4 mb-4">
-            <div class="card best-seller-card">
-                <div class="card-body">
-                    <h5 class="card-title">Produtos Mais Vendidos (Hoje)</h5>
-                    <?php if (count($produtosVendidosHoje) > 0): ?>
-                        <ul class="list-group list-group-flush">
-                            <?php foreach ($produtosVendidosHoje as $produto): ?>
-                                <li class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="text-truncate me-2" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                            <?php echo htmlspecialchars($produto['name']); ?>
-                                        </span>
-                                        <span class="badge rounded-pill"><?php echo $produto['total']; ?> un</span>
+    <!-- Produtos Mais Vendidos (Semana) -->
+    <div class="col-12 col-md-4 mb-4">
+        <div class="card best-seller-card">
+            <div class="card-body">
+                <h5 class="card-title">Produtos Mais Vendidos (Semana)</h5>
+                <?php if (count($produtosVendidosSemana) > 0): ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($produtosVendidosSemana as $produto): ?>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="me-3">
+                                        <i class="bi bi-tag text-muted"></i>
                                     </div>
-                                    <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: <?php echo ($produto['total'] / $maxVendasHoje) * 100; ?>%" aria-valuenow="<?php echo $produto['total']; ?>" aria-valuemin="0" aria-valuemax="<?php echo $maxVendasHoje; ?>"></div>
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php else: ?>
-                        <p class="text-muted mb-0">Nenhuma venda hoje</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-4 mb-4">
-            <div class="card best-seller-card">
-                <div class="card-body">
-                    <h5 class="card-title">Produtos Mais Vendidos (Semana)</h5>
-                    <?php if (count($produtosVendidosSemana) > 0): ?>
-                        <ul class="list-group list-group-flush">
-                            <?php foreach ($produtosVendidosSemana as $produto): ?>
-                                <li class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="text-truncate me-2" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                            <?php echo htmlspecialchars($produto['name']); ?>
-                                        </span>
-                                        <span class="badge rounded-pill"><?php echo $produto['total']; ?> un</span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: <?php echo ($produto['total'] / $maxVendasSemana) * 100; ?>%" aria-valuenow="<?php echo $produto['total']; ?>" aria-valuemin="0" aria-valuemax="<?php echo $maxVendasSemana; ?>"></div>
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php else: ?>
-                        <p class="text-muted mb-0">Nenhuma venda esta semana</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-4 mb-4">
-            <div class="card best-seller-card">
-                <div class="card-body">
-                    <h5 class="card-title">Produtos Mais Vendidos (Mês)</h5>
-                    <?php if (count($produtosMaisVendidosMes) > 0): ?>
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($produtosMaisVendidosMes as $produto): ?>
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center flex-grow-1">
-                                        <div class="me-3">
-                                            <i class="bi bi-box-seam text-muted"></i>
-                                        </div>
-                                        <div class="text-truncate">
-                                            <?php echo htmlspecialchars($produto['name']); ?>
-                                        </div>
-                                    </div>
-                                    <div class="ms-3">
-                                        <span class="badge bg-primary rounded-pill">
-                                            <?php echo $produto['total']; ?> un
-                                        </span>
+                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
+                                        <?php echo htmlspecialchars($produto['name']); ?>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="text-muted mb-0">Nenhuma venda este mês</p>
-                    <?php endif; ?>
-                </div>
+                                <div class="ms-3">
+                                    <span class="badge bg-primary rounded-pill">
+                                        <?php echo $produto['total']; ?> un
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted mb-0">Nenhuma venda esta semana</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
+
+    <!-- Produtos Mais Vendidos (Mês) -->
+    <div class="col-12 col-md-4 mb-4">
+        <div class="card best-seller-card">
+            <div class="card-body">
+                <h5 class="card-title">Produtos Mais Vendidos (Mês)</h5>
+                <?php if (count($produtosMaisVendidosMes) > 0): ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($produtosMaisVendidosMes as $produto): ?>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="me-3">
+                                        <i class="bi bi-tag text-muted"></i>
+                                    </div>
+                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
+                                        <?php echo htmlspecialchars($produto['name']); ?>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <span class="badge bg-primary rounded-pill">
+                                        <?php echo $produto['total']; ?> un
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted mb-0">Nenhuma venda este mês</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Alerta de Estoque Baixo -->
     <div class="card border-danger mb-4">
