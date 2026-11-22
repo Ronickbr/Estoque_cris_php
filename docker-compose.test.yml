@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mysql-test:
+    image: mysql:8.0
+    container_name: estoque_cris_test_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: estoque
+      MYSQL_USER: netstore_estoque
+      MYSQL_PASSWORD: estoque_1103
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./test_data:/var/lib/mysql
+      - ./config/schema_optimized.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./migrations/001_fix_schema.sql:/docker-entrypoint-initdb.d/02_fix_schema.sql
+      - ./migrations/002_add_indexes.sql:/docker-entrypoint-initdb.d/03_indexes.sql
+      - ./migrations/003_stock_triggers.sql:/docker-entrypoint-initdb.d/04_triggers.sql
+      - ./backups/backup_2025-04-22_19-26-05.sql:/docker-entrypoint-initdb.d/05_data.sql
+    command:
+      - --slow-query-log=1
+      - --long-query-time=1
+      - --log-queries-not-using-indexes=1
+      - --max_allowed_packet=64M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: estoque_cris_phpmyadmin
+    environment:
+      PMA_HOST: mysql-test
+      PMA_PORT: 3306
+      PMA_USER: netstore_estoque
+      PMA_PASSWORD: estoque_1103
+    ports:
+      - "8081:80"
+    depends_on:
+      mysql-test:
+        condition: service_healthy
+
+---
+# Uso:
+# docker-compose -f docker-compose.test.yml up -d
+#
+# Acessar:
+# - MySQL: localhost:3307 (user: netstore_estoque, pass: estoque_1103, db: estoque)
+# - phpMyAdmin: http://localhost:8081
+#
+# Testar migrações:
+# docker exec -i estoque_cris_test_db mysql -u netstore_estoque -pestoque_1103 estoque < migrations/001_fix_schema.sql
+# docker exec -i estoque_cris_test_db mysql -u netstore_estoque -pestoque_1103 estoque < migrations/002_add_indexes.sql
+# docker exec -i estoque_cris_test_db mysql -u netstore_estoque -pestoque_1103 estoque < migrations/003_stock_triggers.sql
