@@ -1,0 +1,46 @@
+# Dependencies
+vendor/
+composer.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+log/
+*.log
+
+# Database
+*.sql
+*.sqlite
+*.db
+
+# Backups
+backups/
+*.bak
+
+# Uploads
+uploads/
+!uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# PHP
+.php-cs-fixer.cache
+.phpunit.result.cache
+coverage/
+
+# Testing
+phpunit.xml.dist
