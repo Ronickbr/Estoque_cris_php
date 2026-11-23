@@ -13,6 +13,6 @@ $_SESSION = array();
 session_destroy();
 
 // Redirecionar para a página de login
-header('Location: /estoque/login.php');
+header('Location: /login.php');
 exit;
 ?>

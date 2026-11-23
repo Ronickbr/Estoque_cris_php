@@ -1,632 +1,943 @@
-/* Estilos personalizados para o Gerenciador de Estoque */
+/**
+ * Sistema de Estoque - Tema Minimalista Corporativo (Executive Cobalt Slate)
+ * Baseado nos princípios de Design Intelligence (ui-ux-pro-max) e Refinamento Visual (baseline-ui)
+ */
 
-body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+/* ==========================================================================
+   1. Design Tokens & Variáveis Globais
+   ========================================================================== */
+:root {
+    /* Paleta Principal: Azul Cobalto & Oceano Executivo */
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-active: #075985;
+    --primary-subtle: #f0f9ff;
+    --primary-border: #bae6fd;
+    --primary-text: #0369a1;
 
-footer {
-    margin-top: auto;
-}
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
 
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    margin-bottom: 1.5rem;
-}
+    /* Tons Neutros Frios (Slate) */
+    --slate-950: #020617;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --white: #ffffff;
 
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
+    /* Estados Semânticos */
+    --success: #059669;
+    --success-subtle: #ecfdf5;
+    --success-border: #a7f3d0;
+    --success-text: #047857;
 
-/* Status de estoque */
-.estoque-baixo {
-    color: #dc3545;
-    font-weight: bold;
-}
+    --warning: #d97706;
+    --warning-subtle: #fffbeb;
+    --warning-border: #fde68a;
+    --warning-text: #b45309;
 
-.estoque-medio {
-    color: #fd7e14;
-}
+    --danger: #e11d48;
+    --danger-subtle: #fff1f2;
+    --danger-border: #fecdd3;
+    --danger-text: #be123c;
 
-.estoque-alto {
-    color: #198754;
-}
+    --info: #0284c7;
+    --info-subtle: #f0f9ff;
+    --info-border: #bae6fd;
+    --info-text: #0369a1;
 
-/* Animações */
-.fade-in {
-    animation: fadeIn 0.5s;
-}
+    /* Geometria & Bordas */
+    --border-radius-sm: 6px;
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-pill: 9999px;
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+    /* Sombras Sutis (Sem borrão excessivo) */
+    --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.07);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
 
-/* Responsividade para tabelas */
-@media (max-width: 767.98px) {
-    .table-responsive {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-    }
-}
-
-/* Estilização dos Cards de Resumo */
-.summary-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border-radius: 15px;
-}
-
-.summary-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-}
-
-.summary-card .icon-bg {
-    width: 60px;
-    height: 60px;
-    font-size: 1.5rem;
-}
-
-.summary-card h2 {
-    font-size: 2.5rem;
-    line-height: 1.2;
+    /* Tipografia */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Poppins', sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.summary-card h6 {
-    font-size: 0.875rem;
-    font-weight: 500;
+/* ==========================================================================
+   2. Reset, Base e Tipografia
+   ========================================================================== */
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-.summary-card small {
-    font-size: 0.75rem;
-}
-
-/* Animação suave ao carregar */
-.summary-card {
-    animation: fadeInUp 0.5s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .summary-card h2 {
-        font-size: 2rem;
-    }
-    
-    .summary-card .icon-bg {
-        width: 50px;
-        height: 50px;
-    }
-}
-/* Estilização do Alerta de Estoque Baixo - Versão Melhorada */
-.stock-alert-card {
-    border: none;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(220, 53, 69, 0.12);
-    overflow: hidden;
-}
-
-.stock-alert-card .card-header {
-    background: linear-gradient(45deg, #dc3545, #ff4d5d);
-    border-bottom: none;
-    padding: 1.5rem;
-}
-
-.manufacturer-card {
-    background: #fff;
-    border-radius: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    border: 1px solid #f0f0f0;
-}
-
-.manufacturer-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-
-.manufacturer-card .card-header {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
-    position: relative;
-}
-
-.manufacturer-card .items-count {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.8rem;
-    color: #6c757d;
-    background: #e9ecef;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-}
-
-.manufacturer-card .list-group-item {
-    padding: 0.8rem 1rem;
-    border-left: none;
-    border-right: none;
-    transition: background-color 0.3s ease;
-}
-
-.manufacturer-card .list-group-item:hover {
-    background-color: #f8f9fa;
-}
-
-.product-info {
-    width: 100%;
-}
-
-.product-name {
-    font-size: 0.9rem;
-    color: #495057;
-    max-width: 65%;
-}
-
-.manufacturer-card .badge {
-    font-weight: 500;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.8rem;
-}
-
-.manufacturer-card .badge.bg-danger {
-    background: linear-gradient(45deg, #dc3545, #ff4d5d) !important;
-    animation: pulse 2s infinite;
-}
-
-.manufacturer-card .badge.bg-warning {
-    background: linear-gradient(45deg, #ffc107, #ffcd39) !important;
-    color: #000;
-}
-
-.manufacturer-card .progress {
-    background-color: #f0f0f0;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.manufacturer-card .progress-bar {
-    transition: width 0.6s ease;
-}
-
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-    }
-}
-
-@media (max-width: 768px) {
-    .manufacturer-card .card-header {
-        padding: 0.8rem;
-    }
-    
-    .product-name {
-        max-width: 55%;
-        font-size: 0.85rem;
-    }
-    
-    .manufacturer-card .badge {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.75rem;
-    }
-}
 body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background-color: #f4f6f9;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--slate-800);
+    background-color: var(--slate-50);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--slate-900);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.125rem; }
+h4 { font-size: 1rem; }
+h5 { font-size: 0.925rem; }
+h6 { font-size: 0.825rem; }
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.15s ease-in-out;
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+/* ==========================================================================
+   3. Estrutura de Layout (Sidebar & Conteúdo)
+   ========================================================================== */
 .sidebar {
     width: 250px;
-    background: linear-gradient(180deg, #ffffff, #e9ecef);
-    border-right: 1px solid #dee2e6;
-    padding: 1rem 0;
+    background-color: var(--slate-900);
+    border-right: 1px solid var(--slate-800);
+    padding: 0;
     position: fixed;
     top: 0;
     bottom: 0;
+    left: 0;
     overflow-y: auto;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    z-index: 1020;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--slate-800);
+    border-radius: 2px;
+}
+
 .sidebar .logo {
     display: flex;
     align-items: center;
-    padding: 1rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #28a745;
+    padding: 1.25rem 1.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--white);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+.sidebar .logo i {
+    font-size: 1.25rem;
+    color: #38bdf8;
+    margin-right: 0.65rem;
+}
+
+.sidebar .nav {
+    padding: 1rem 0.75rem;
+    gap: 0.25rem;
+}
+
+.sidebar .nav-item {
+    margin-bottom: 0.125rem;
+}
+
 .sidebar .nav-link {
-    color: #495057;
-    padding: 0.75rem 1.5rem;
+    color: var(--slate-400);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
-    transition: all 0.3s ease;
+    transition: all 0.15s ease-in-out;
 }
-.sidebar .nav-link:hover {
-    background-color: #28a745;
-    color: #fff;
-    transform: translateX(5px);
-}
+
 .sidebar .nav-link i {
-    margin-right: 0.5rem;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    color: var(--slate-500);
+    transition: color 0.15s ease-in-out;
 }
+
+.sidebar .nav-link:hover {
+    color: var(--white);
+    background-color: rgba(255, 255, 255, 0.06);
+    transform: none;
+}
+
+.sidebar .nav-link:hover i {
+    color: #38bdf8;
+}
+
+.sidebar .nav-link.active {
+    color: var(--white);
+    background-color: var(--primary);
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+.sidebar .nav-link.active i {
+    color: var(--white);
+}
+
 .sidebar .user-section {
-    position: absolute;
-    bottom: 1rem;
-    width: 100%;
-    padding: 0 1rem;
+    margin-top: auto;
+    padding: 1rem 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(0, 0, 0, 0.15);
 }
-.content {
+
+.sidebar .user-section .nav-link {
+    color: var(--slate-400);
+}
+
+.sidebar .user-section .nav-link:hover {
+    color: #f87171;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.sidebar .user-section .nav-link:hover i {
+    color: #f87171;
+}
+
+/* Wrapper Principal e Topbar Executiva Integrada */
+.main-wrapper {
     margin-left: 250px;
-    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     flex: 1;
+    min-width: 0;
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.content .row {
-    max-width: 1200px;
+
+.main-wrapper.collapsed {
+    margin-left: 0;
+}
+
+/* Topbar Executiva Limpa */
+.app-topbar {
+    height: 62px;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-toggler-btn {
+    background: transparent;
+    border: 1px solid var(--slate-300);
+    border-radius: var(--border-radius-sm);
+    color: var(--slate-700);
+    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.navbar-toggler-btn:hover {
+    background-color: var(--slate-100);
+    border-color: var(--slate-400);
+}
+
+.topbar-actions {
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.topbar-user-btn {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius);
+    transition: background-color 0.15s ease-in-out;
+}
+
+.topbar-user-btn:hover {
+    background-color: var(--slate-100);
+}
+
+.topbar-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-xs);
+}
+
+.topbar-divider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--slate-200);
+    margin: 0 0.25rem;
+}
+
+/* Área de Conteúdo abaixo da Topbar */
+.content {
+    margin-left: 0;
+    padding: 1.75rem 2rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.content.collapsed {
+    margin-left: 0;
+}
+
+.content .content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+}
+
+.content > .row {
+    max-width: 1400px;
     margin: 0 auto;
 }
-footer {
-    margin-left: 0;
-    width: 100%;
-    padding: 1rem;
-    background: linear-gradient(180deg, #f8f9fa, #e9ecef);
-    text-align: center;
-    border-top: 1px solid #dee2e6;
+
+/* Navbar Mobile (legada mantida oculta pois a Topbar gerencia) */
+.navbar-mobile {
+    display: none;
 }
 
-/* Estilização Geral para Cards */
-.card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    background: #fff;
-}
-.card-header {
-    border-bottom: 1px solid #dee2e6;
-    padding: 1rem 1.5rem;
-}
-.card-body {
-    padding: 1.5rem;
-}
-
-/* Estilização dos Cards de Resumo (Dashboard) */
-.summary-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    background: linear-gradient(135deg, #ffffff, #f8f9fa);
-}
-.summary-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-.summary-card .card-body {
-    padding: 1.5rem;
+.notification-bell {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--border-radius-sm);
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    color: var(--slate-600);
     display: flex;
     align-items: center;
-}
-.summary-card .icon-wrapper {
-    font-size: 2.5rem;
-    color: #28a745;
-    margin-right: 1rem;
-}
-.summary-card h5 {
-    font-size: 1rem;
-    color: #6c757d;
-    margin-bottom: 0.5rem;
-}
-.summary-card h3 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #343a40;
-    margin: 0;
-}
-.summary-card p {
-    font-size: 0.9rem;
-    color: #adb5bd;
-    margin: 0;
+    justify-content: center;
+    font-size: 1.15rem;
+    position: relative;
+    box-shadow: var(--shadow-xs);
+    transition: all 0.15s ease-in-out;
 }
 
-/* Estilização dos Produtos Mais Vendidos (Dashboard) */
-.best-seller-card {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    background: #fff;
-    transition: transform 0.3s ease;
-}
-.best-seller-card:hover {
-    transform: translateY(-5px);
-}
-.best-seller-card .card-body {
-    padding: 1.5rem;
-}
-.best-seller-card h5 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #343a40;
-    margin-bottom: 1rem;
-}
-.best-seller-card .list-group-item {
-    border: none;
-    padding: 0.5rem 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.best-seller-card .progress {
-    height: 8px;
-    margin-top: 0.5rem;
-    background-color: #e9ecef;
-}
-.best-seller-card .progress-bar {
-    background: linear-gradient(90deg, #28a745, #20c997);
-}
-.best-seller-card .badge {
-    background: linear-gradient(90deg, #007bff, #0056b3);
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    transition: transform 0.3s ease;
-}
-.best-seller-card .badge:hover {
-    transform: scale(1.1);
+.notification-bell:hover {
+    background: var(--slate-100);
+    color: var(--primary);
+    border-color: var(--slate-300);
 }
 
-/* Estilização do Alerta de Estoque Baixo (Dashboard) */
-.stock-alert-card {
-    border: 2px solid #dc3545;
-    border-radius: 15px;
-    background: #fff;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2em 0.45em;
+    border-radius: var(--border-radius-pill);
+    border: 2px solid var(--white);
 }
-.stock-alert-card .card-header {
-    border-bottom: none;
-    padding: 1rem 1.5rem;
+
+/* Dropdown de Notificações */
+.notification-list {
+    width: 360px;
+    max-height: 440px;
+    overflow-y: auto;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    background: var(--white);
 }
-.stock-alert-card h5 {
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-.stock-alert-card .card-body {
-    padding: 1.5rem;
-}
-.stock-alert-card .manufacturer-card {
-    border: none;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #fff, #f8f9fa);
-    transition: transform 0.3s ease;
-}
-.stock-alert-card .manufacturer-card:hover {
-    transform: translateY(-3px);
-}
-.stock-alert-card .manufacturer-card .card-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+
+.notification-item {
     padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--slate-100);
+    transition: background-color 0.15s ease;
 }
-.stock-alert-card .manufacturer-card h6 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #343a40;
-    margin: 0;
+
+.notification-item:hover {
+    background-color: var(--slate-50);
 }
-.stock-alert-card .list-group-item {
-    border: none;
-    padding: 0.5rem 0;
+
+.notification-item.unread {
+    background-color: #f0fdf4;
+    border-left: 3px solid var(--success);
+}
+
+/* ==========================================================================
+   4. Cards e Arquitetura de Informação
+   ========================================================================== */
+.card {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    box-shadow: var(--shadow-xs);
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+    border-color: var(--slate-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 1rem 1.25rem;
     display: flex;
+    align-items: center;
     justify-content: space-between;
+}
+
+.card-header h4,
+.card-header h5,
+.card-header h6 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--slate-900);
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-footer {
+    background: var(--slate-50);
+    border-top: 1px solid var(--slate-200);
+    padding: 0.75rem 1.25rem;
+}
+
+/* Cards de Resumo / KPI (Dashboard) */
+.summary-card {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    box-shadow: var(--shadow-xs);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary);
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--slate-300);
+}
+
+.summary-card .card-body {
+    padding: 1.25rem;
+    display: flex;
     align-items: center;
 }
-.stock-alert-card .product-name {
-    max-width: 70%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.stock-alert-card .badge {
-    font-size: 0.85rem;
-    padding: 0.4rem 0.8rem;
+
+.summary-card .icon-wrapper {
+    width: 46px;
+    height: 46px;
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    background-color: var(--primary-subtle);
+    color: var(--primary);
+    margin-right: 1rem;
     flex-shrink: 0;
 }
-.stock-alert-card .badge.bg-danger {
-    animation: blink 1.5s infinite;
-}
-@keyframes blink {
-    50% { opacity: 0.5; }
+
+.summary-card h5 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--slate-500);
+    margin-bottom: 0.25rem;
 }
 
-/* Cards de Alerta de Estoque */
+.summary-card h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--slate-900);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-card p {
+    font-size: 0.775rem;
+    color: var(--slate-400);
+    margin: 0.25rem 0 0 0;
+}
+
+/* Variações de cor para KPIs */
+.summary-card.kpi-success::before { background: var(--success); }
+.summary-card.kpi-success .icon-wrapper { background: var(--success-subtle); color: var(--success); }
+
+.summary-card.kpi-warning::before { background: var(--warning); }
+.summary-card.kpi-warning .icon-wrapper { background: var(--warning-subtle); color: var(--warning); }
+
+.summary-card.kpi-danger::before { background: var(--danger); }
+.summary-card.kpi-danger .icon-wrapper { background: var(--danger-subtle); color: var(--danger); }
+
+/* Card de Alerta de Estoque Crítico */
 .stock-alert-card {
-    border: none;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    border: 1px solid var(--danger-border);
+    border-left: 4px solid var(--danger);
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xs);
 }
 
+.stock-alert-card .card-header {
+    background: #fff5f5;
+    border-bottom: 1px solid var(--danger-border);
+}
+
+/* Card de Fabricantes (Dashboard e Gestão) */
 .manufacturer-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: none;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    box-shadow: var(--shadow-xs);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    overflow: hidden;
 }
 
 .manufacturer-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--slate-300);
 }
 
-.manufacturer-card .card-header {
-    border-bottom: 2px solid rgba(0,0,0,0.05);
+.manufacturer-header {
+    padding: 1rem 1.25rem;
+    background: var(--slate-900);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.manufacturer-card .list-group-item {
-    transition: background-color 0.2s;
+.manufacturer-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--border-radius-sm);
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 1.1rem;
+}
+
+/* Card de Mais Vendidos */
+.best-seller-card {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    box-shadow: var(--shadow-xs);
+}
+
+.best-seller-card .list-group-item {
     border-left: none;
     border-right: none;
-}
-
-.manufacturer-card .list-group-item:hover {
-    background-color: rgba(0,0,0,0.02);
-}
-
-.manufacturer-card .product-name {
-    max-width: 65%;
-    font-size: 0.9rem;
-}
-
-.manufacturer-card .badge {
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.manufacturer-card .progress {
-    background-color: rgba(0,0,0,0.05);
-    border-radius: 10px;
-}
-
-.manufacturer-card .progress-bar {
-    border-radius: 10px;
-    transition: width 0.3s ease;
-}
-
-.stock-alert-card .card-header i {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);
-    }
-    100% {
-        transform: scale(1);
-    }
-}
-
-/* Estilos para os cards de fabricantes */
-.manufacturer-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.manufacturer-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-
-.manufacturer-card .card-header {
-    background: linear-gradient(45deg, #f8f9fa, #ffffff);
-}
-
-.manufacturer-card .manufacturer-icon {
-    width: 40px;
-    height: 40px;
+    border-color: var(--slate-100);
+    padding: 0.75rem 1.25rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background-color: rgba(13, 110, 253, 0.1);
-    border-radius: 8px;
+    justify-content: space-between;
 }
 
-.manufacturer-card .list-group-item {
-    transition: background-color 0.2s ease;
+.best-seller-card .progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--slate-100);
+    margin-top: 0.35rem;
 }
 
-.manufacturer-card .list-group-item:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+.best-seller-card .progress-bar {
+    background: var(--primary);
+    border-radius: 3px;
 }
 
-.manufacturer-card .progress {
-    background-color: rgba(0, 0, 0, 0.05);
+/* ==========================================================================
+   5. Tabelas de Alta Densidade de Dados
+   ========================================================================== */
+.table-responsive {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    box-shadow: var(--shadow-xs);
+    -webkit-overflow-scrolling: touch;
 }
 
-.manufacturer-card .badge {
-    font-weight: 500;
-    letter-spacing: 0.3px;
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--slate-50);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
 }
 
-.manufacturer-card .product-name {
-    color: #2c3e50;
-    max-width: 200px;
+.table {
+    margin-bottom: 0;
+    vertical-align: middle;
+    font-size: 0.85rem;
 }
 
-.manufacturer-card small.text-muted {
-    font-size: 0.8rem;
-}
-
-/* Estilização da Tabela de Produtos (Página de Produtos) */
-.table-products th:nth-child(1),
-.table-products td:nth-child(1) {
-    max-width: 300px;
-}
-.table-products .product-name {
-    max-width: 100%;
+.table thead th {
+    background-color: var(--slate-50);
+    color: var(--slate-600);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--slate-200);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 200px;
-    }
-    .content {
-        margin-left: 200px;
-    }
-    .summary-card .card-body {
-        flex-direction: column;
-        text-align: center;
-    }
-    .summary-card .icon-wrapper {
-        margin-right: 0;
-        margin-bottom: 1rem;
-    }
-    .stock-alert-card .product-name {
-        max-width: 60%;
-    }
-    .table-products th:nth-child(1),
-    .table-products td:nth-child(1) {
-        max-width: 200px;
-    }
+.table tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--slate-800);
+    border-bottom: 1px solid var(--slate-100);
+    font-variant-numeric: tabular-nums;
 }
 
-/* Estilos para ícones circulares nos cards de resumo */
-.icon-bg {
-    width: 48px;
-    height: 48px;
-    transition: all 0.3s ease;
-    display: flex;
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Badges e Pílulas de Status */
+.badge {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.3em 0.65em;
+    border-radius: var(--border-radius-sm);
+    letter-spacing: 0.01em;
+}
+
+.badge-subtle-primary {
+    background-color: var(--primary-subtle);
+    color: var(--primary-text);
+    border: 1px solid var(--primary-border);
+}
+
+.badge-subtle-success {
+    background-color: var(--success-subtle);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+}
+
+.badge-subtle-warning {
+    background-color: var(--warning-subtle);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
+}
+
+.badge-subtle-danger {
+    background-color: var(--danger-subtle);
+    color: var(--danger-text);
+    border: 1px solid var(--danger-border);
+}
+
+.stock-badge {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-weight: 700;
+    min-width: 36px;
+    height: 24px;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    font-variant-numeric: tabular-nums;
 }
 
-.summary-card:hover .icon-bg {
-    transform: scale(1.1);
+/* Botões de Ação na Tabela */
+.table .btn-group {
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
 }
 
-.icon-bg i {
-    font-size: 1.5rem;
+.table .btn-group .btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--slate-200);
+}
+
+.table .btn-group .btn:hover {
+    background-color: var(--slate-100);
+    border-color: var(--slate-300);
+}
+
+/* ==========================================================================
+   6. Formulários e Controles de Entrada
+   ========================================================================== */
+.form-control,
+.form-select {
+    border: 1px solid var(--slate-300);
+    border-radius: var(--border-radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--slate-800);
+    background-color: var(--white);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    outline: none;
+}
+
+.form-label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--slate-700);
+    margin-bottom: 0.35rem;
+}
+
+.form-floating > .form-control,
+.form-floating > .form-select {
+    height: calc(3rem + 2px);
+    line-height: 1.25;
+}
+
+.form-floating > label {
+    font-size: 0.85rem;
+    padding: 0.75rem 0.85rem;
+    color: var(--slate-500);
+}
+
+/* ==========================================================================
+   7. Botões e Ações
+   ========================================================================== */
+.btn {
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-radius: var(--border-radius-sm);
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--white);
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.btn-outline-secondary {
+    color: var(--slate-600);
+    border-color: var(--slate-300);
+    background: var(--white);
+}
+
+.btn-outline-secondary:hover {
+    color: var(--slate-800);
+    border-color: var(--slate-400);
+    background-color: var(--slate-100);
+}
+
+.btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* ==========================================================================
+   8. Modais e Diálogos de Confirmação
+   ========================================================================== */
+.modal-content {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    background: var(--slate-50);
+    border-top: 1px solid var(--slate-200);
+    padding: 0.85rem 1.5rem;
+}
+
+/* ==========================================================================
+   9. Alertas do Sistema
+   ========================================================================== */
+.alert {
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    padding: 0.85rem 1.25rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-xs);
+}
+
+.alert-success {
+    background-color: var(--success-subtle);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+.alert-danger {
+    background-color: var(--danger-subtle);
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+.alert-warning {
+    background-color: var(--warning-subtle);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+}
+
+.alert-info {
+    background-color: var(--info-subtle);
+    border-color: var(--info-border);
+    color: var(--info-text);
+}
+
+/* ==========================================================================
+   10. Responsividade (Mobile & Tablet)
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+        top: 0;
+        height: 100vh;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .main-wrapper {
+        margin-left: 0 !important;
+    }
+
+    .app-topbar {
+        padding: 0 1rem;
+        height: 56px;
+    }
+
+    .content {
+        padding: 1.25rem 1rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-topbar {
+        padding: 0 0.75rem;
+    }
+
+    .content {
+        padding: 1rem 0.75rem;
+    }
+
+    .summary-card h3 {
+        font-size: 1.4rem;
+    }
+
+    .summary-card .icon-wrapper {
+        width: 38px;
+        height: 38px;
+        font-size: 1.15rem;
+    }
+
+    .table thead th,
+    .table tbody td {
+        padding: 0.5rem 0.65rem;
+        font-size: 0.775rem;
+    }
 }

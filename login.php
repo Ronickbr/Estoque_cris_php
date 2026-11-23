@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/funcoes.php';
 
 // Redirecionar se já estiver logado
 if (estaLogado()) {
-    header('Location: /estoque/index.php');
+    header('Location: /index.php');
     exit;
 }
 
@@ -12,15 +12,18 @@ $erro = '';
 
 // Processar formulário de login
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['criar_usuario'])) {
-    $nome = limparEntrada($_POST['nome'] ?? '');
-    $senha = $_POST['senha'] ?? '';
+    if (!verificarCsrfToken()) {
+        $erro = 'Sessão expirada ou token de segurança inválido. Recarregue a página.';
+    } else {
+        $login = limparEntrada($_POST['login'] ?? '');
+        $senha = $_POST['senha'] ?? '';
     
-    if (empty($nome) || empty($senha)) {
+    if (empty($login) || empty($senha)) {
         $erro = 'Por favor, preencha todos os campos.';
     } else {
         try {
-            $stmt = $conn->prepare("SELECT id, nome, email, senha, nivel FROM usuarios WHERE nome = ?");
-            $stmt->execute([$nome]);
+            $stmt = $conn->prepare("SELECT id, nome, email, senha, nivel FROM usuarios WHERE email = ? OR nome = ?");
+            $stmt->execute([$login, $login]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($usuario && password_verify($senha, $usuario['senha'])) {
@@ -31,15 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['criar_usuario'])) {
                 $_SESSION['usuario_nivel'] = $usuario['nivel'];
                 
                 // Redirecionar para a página inicial
-                header('Location: /estoque/index.php');
+                header('Location: /index.php');
                 exit;
             } else {
-                $erro = 'Nome de usuário ou senha incorretos.';
+                $erro = 'Usuário ou senha incorretos.';
             }
         } catch (PDOException $e) {
             $erro = 'Erro ao processar login: ' . $e->getMessage();
         }
     }
+}
 }
 
 $titulo = 'Login';
@@ -50,46 +54,45 @@ $titulo = 'Login';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $titulo; ?> - Gerenciador de Estoque</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <!-- CSS Personalizado -->
-    <link href="/estoque/assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo function_exists('url') ? url('/assets/css/style.css') : '/assets/css/style.css'; ?>?v=<?php echo @filemtime(__DIR__ . '/assets/css/style.css') ?: '2.1'; ?>" rel="stylesheet">
     <style>
         body {
             display: flex;
             align-items: center;
-            padding-top: 40px;
-            padding-bottom: 40px;
-            background-color: #f5f5f5;
-            height: 100vh;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--slate-900);
+            font-family: var(--font-sans);
+            padding: 1.5rem;
         }
         .form-signin {
             width: 100%;
-            max-width: 330px;
-            padding: 15px;
+            max-width: 400px;
+            padding: 2.25rem;
             margin: auto;
-        }
-        .hidden-btn {
-            background: none;
-            border: none;
-            color: #6c757d;
-            font-size: 12px;
-            text-decoration: underline;
-            cursor: pointer;
-            opacity: 0.5;
-        }
-        .hidden-btn:hover {
-            opacity: 1;
+            background: #ffffff;
+            border: 1px solid var(--slate-800);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
 <body>
     <main class="form-signin text-center">
         <form method="post" action="">
-            <img class="mb-4" src="/estoque/assets/images/Suplemento.png" alt="Logo" width="72" height="92">
-            <h1 class="h3 mb-3 fw-normal">Gerenciador de Estoque</h1>
+            <?php echo campoCsrf(); ?>
+            <div class="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; background-color: var(--primary-subtle); color: var(--primary);">
+                <i class="bi bi-boxes fs-2"></i>
+            </div>
+            <h1 class="h4 mb-1 fw-bold text-dark">Estoque Pro</h1>
+            <p class="text-muted small mb-4">Acesso ao Painel Corporativo</p>
             
             <?php if (!empty($erro)): ?>
                 <div class="alert alert-danger"><?php echo $erro; ?></div>
@@ -110,8 +113,8 @@ $titulo = 'Login';
             <?php endif; ?>
             
             <div class="form-floating mb-3">
-                <input type="text" class="form-control" id="nome" name="nome" placeholder="nome" required>
-                <label for="nome">Nome</label>
+                <input type="text" class="form-control" id="login" name="login" placeholder="Nome ou E-mail" required>
+                <label for="login">Nome ou E-mail</label>
             </div>
             <div class="form-floating mb-3">
                 <input type="password" class="form-control" id="senha" name="senha" placeholder="Senha" required>
@@ -119,7 +122,7 @@ $titulo = 'Login';
             </div>
             
             <div class="mb-3">
-                <a href="/estoque/redefinir-senha.php">Esqueceu a senha?</a>
+                <a href="/redefinir-senha.php">Esqueceu a senha?</a>
             </div>
             
             <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">Entrar</button>
@@ -141,7 +144,8 @@ $titulo = 'Login';
                     <h5 class="modal-title" id="modalCriarUsuarioLabel">Criar Novo Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="post" action="/estoque/criar_usuario.php">
+                <form method="post" action="/criar_usuario.php">
+                    <?php echo campoCsrf(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="novo_nome" class="form-label">Nome</label>

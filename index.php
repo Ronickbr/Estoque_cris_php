@@ -7,373 +7,45 @@ require_once __DIR__ . '/includes/header.php';
 // Verificar se usuário está logado
 verificarLogin();
 
+// Carregar Serviço de Dashboard
+// Verifica se o autoloader do composer existe, senão carrega manual
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+} else {
+    require_once __DIR__ . '/src/Services/DashboardService.php';
+    require_once __DIR__ . '/src/Services/NotificationService.php';
+}
+
+use Estoque\Services\DashboardService;
+use Estoque\Services\NotificationService;
+
 try {
-    // Vendas hoje (últimas 24h)
-    $stmtVendasHoje = $conn->query("
-        SELECT COALESCE(SUM(quantity), 0) as total 
-        FROM inventory_movements 
-        WHERE type = 'saida' 
-        AND created_at >= NOW() - INTERVAL 1 DAY
-    ");
-    $vendasHoje = $stmtVendasHoje->fetch(PDO::FETCH_ASSOC)['total'];
+    $dashboardService = new DashboardService($conn);
+    
+    // Inicializar e verificar notificações
+    $notificationService = new NotificationService($conn);
+    $notificationService->checkStockAlerts($dashboardService);
 
-    // Vendas na semana (últimos 7 dias)
-    $stmtVendasSemana = $conn->query("
-        SELECT COALESCE(SUM(quantity), 0) as total 
-        FROM inventory_movements 
-        WHERE type = 'saida' 
-        AND created_at >= NOW() - INTERVAL 7 DAY
-    ");
-    $vendasSemana = $stmtVendasSemana->fetch(PDO::FETCH_ASSOC)['total'];
+    // Obter resumo do dashboard em uma única chamada otimizada
+    $dadosDashboard = $dashboardService->getDashboardSummary();
 
-    // Vendas no mês (últimos 30 dias)
-    $stmtVendasMes = $conn->query("
-        SELECT COALESCE(SUM(quantity), 0) as total 
-        FROM inventory_movements 
-        WHERE type = 'saida' 
-        AND created_at >= NOW() - INTERVAL 30 DAY
-    ");
-    $vendasMes = $stmtVendasMes->fetch(PDO::FETCH_ASSOC)['total'];
+    $vendasDiarias = $dadosDashboard['vendas_diarias'];
+    $vendasHoje = $dadosDashboard['vendas_hoje'];
+    $vendasSemana = $dadosDashboard['vendas_semana'];
+    $vendasMes = $dadosDashboard['vendas_mes'];
+    $diaMaisVendas = $dadosDashboard['dia_mais_vendas'];
+    $diaMaisVendasNome = $diaMaisVendas['nome_pt'];
+    $produtosMaisVendidosMes = $dadosDashboard['produtos_top_mes'];
+    $estoqueBaixo = $dadosDashboard['estoque_baixo'];
+    $estoqueBaixoPorFabricante = $dadosDashboard['estoque_baixo_por_fabricante'] ?? [];
 
-    // Dia com mais vendas (baseado nos últimos 30 dias)
-    $stmtDiaMaisVendas = $conn->query("
-        SELECT DAYNAME(created_at) as dia, COALESCE(SUM(quantity), 0) as total 
-        FROM inventory_movements 
-        WHERE type = 'saida' 
-        AND created_at >= NOW() - INTERVAL 30 DAY 
-        GROUP BY DAYNAME(created_at) 
-        ORDER BY total DESC 
-        LIMIT 1
-    ");
-    $diaMaisVendas = $stmtDiaMaisVendas->fetch(PDO::FETCH_ASSOC);
-    $diaMaisVendasNome = $diaMaisVendas ? ucfirst(strtolower($diaMaisVendas['dia'])) : 'Desconhecido';
-    $diasTraduzidos = [
-        'Monday' => 'Segunda-feira',
-        'Tuesday' => 'Terça-feira',
-        'Wednesday' => 'Quarta-feira',
-        'Thursday' => 'Quinta-feira',
-        'Friday' => 'Sexta-feira',
-        'Saturday' => 'Sábado',
-        'Sunday' => 'Domingo'
-    ];
-    $diaMaisVendasNome = $diasTraduzidos[$diaMaisVendasNome] ?? $diaMaisVendasNome;
-
-    // Produtos mais vendidos no mês
-    $stmtProdutosMaisVendidosMes = $conn->query("
-        SELECT p.name, SUM(m.quantity) as total 
-        FROM inventory_movements m 
-        JOIN products p ON m.product_id = p.id 
-        WHERE m.type = 'saida' 
-        AND m.created_at >= NOW() - INTERVAL 30 DAY 
-        GROUP BY p.id, p.name 
-        ORDER BY total DESC 
-        LIMIT 5
-    ");
-    $produtosMaisVendidosMes = $stmtProdutosMaisVendidosMes->fetchAll(PDO::FETCH_ASSOC);
-    $maxVendasMes = !empty($produtosMaisVendidosMes) ? max(array_column($produtosMaisVendidosMes, 'total')) : 1;
-
-    // Produtos mais vendidos hoje
-    $stmtProdutosHoje = $conn->query("
-        SELECT p.name, SUM(m.quantity) as total 
-        FROM inventory_movements m 
-        JOIN products p ON m.product_id = p.id 
-        WHERE m.type = 'saida' 
-        AND m.created_at >= NOW() - INTERVAL 1 DAY 
-        GROUP BY p.id, p.name 
-        ORDER BY total DESC 
-        LIMIT 5
-    ");
-    $produtosVendidosHoje = $stmtProdutosHoje->fetchAll(PDO::FETCH_ASSOC);
-    $maxVendasHoje = !empty($produtosVendidosHoje) ? max(array_column($produtosVendidosHoje, 'total')) : 1;
-
-    // Produtos mais vendidos na semana
-    $stmtProdutosSemana = $conn->query("
-        SELECT p.name, SUM(m.quantity) as total 
-        FROM inventory_movements m 
-        JOIN products p ON m.product_id = p.id 
-        WHERE m.type = 'saida' 
-        AND m.created_at >= NOW() - INTERVAL 7 DAY 
-        GROUP BY p.id, p.name 
-        ORDER BY total DESC 
-        LIMIT 5
-    ");
-    $produtosVendidosSemana = $stmtProdutosSemana->fetchAll(PDO::FETCH_ASSOC);
-    $maxVendasSemana = !empty($produtosVendidosSemana) ? max(array_column($produtosVendidosSemana, 'total')) : 1;
-
-    // Produtos com estoque baixo (por fabricante)
-    $stmtEstoqueBaixo = $conn->query("
-        SELECT p.name, p.stock, p.min_stock, m.name as manufacturer 
-        FROM products p 
-        LEFT JOIN manufacturers m ON p.manufacturer_id = m.id 
-        WHERE p.stock <= COALESCE(p.min_stock, 5)
-        ORDER BY m.name, p.stock
-    ");
-    $estoqueBaixo = $stmtEstoqueBaixo->fetchAll(PDO::FETCH_ASSOC);
-
-    // Separar produtos por fabricante (normalizando para evitar problemas de capitalização)
-    $estoqueBaixoBiobalance = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'biobalance') !== false);
-    $estoqueBaixoNutrify = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'nutrify') !== false);
-    $estoqueBaixoGauer = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'gauer') !== false);
-    $estoqueBaixoBloken = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'bloken') !== false);
-    $estoqueBaixoStem = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'stem') !== false);
-    $estoqueBaixoEqualiv = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'equaliv') !== false);
-    $estoqueBaixoDivinite = array_filter($estoqueBaixo, fn($item) => $item['manufacturer'] && stripos(strtolower($item['manufacturer']), 'divinite') !== false);
-
-} catch (PDOException $e) {
+} catch (Exception $e) {
     $_SESSION['mensagem'] = mensagem('danger', 'Erro ao buscar dados: ' . $e->getMessage());
 }
 ?>
 
-<style>
-.manufacturer-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border-radius: 12px;
-    overflow: hidden;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-.manufacturer-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-}
-.manufacturer-header {
-    position: relative;
-    padding: 1.5rem;
-    color: white;
-}
-.manufacturer-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.1;
-    background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), transparent);
-}
-.manufacturer-icon {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease;
-}
-.manufacturer-icon i {
-    font-size: 1.2rem;
-    color: white;
-}
-.manufacturer-card:hover .manufacturer-icon {
-    background: rgba(255, 255, 255, 0.4);
-}
-.product-item {
-    transition: background 0.3s ease;
-}
-.product-item:hover {
-    background: #f8f9fa;
-}
-.product-name {
-    font-size: 0.9rem;
-    color: #495057;
-    font-weight: 500;
-}
-.stock-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    color: white;
-}
-.progress-stock {
-    height: 6px;
-    margin-top: 0.5rem;
-    border-radius: 5px;
-    background: #f8f9fa;
-    overflow: hidden;
-}
-.progress-stock .progress-bar {
-    transition: width 0.5s ease;
-}
-.list-group-item {
-    border-left: none;
-    border-right: none;
-    padding: 1rem;
-}
-.list-group-item:first-child {
-    border-top: none;
-}
-.list-group-item:last-child {
-    border-bottom: none;
-}
-.border-danger {
-    border-width: 2px !important;
-}
-.card-header {
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-}
-.card-header h4 {
-    font-weight: 600;
-    font-size: 1.25rem;
-}
 
-/* Estilos responsivos */
-@media (max-width: 767.98px) {
-    .content {
-        padding: 1rem; /* Reduzir o padding em telas pequenas */
-    }
-    h1 {
-        font-size: 1.5rem; /* Reduzir o tamanho do título */
-    }
-    .breadcrumb {
-        font-size: 0.8rem; /* Reduzir o tamanho do breadcrumb */
-    }
-    .btn-lg {
-        font-size: 0.9rem; /* Reduzir o tamanho do botão */
-        padding: 0.5rem 1rem;
-    }
 
-    /* Cards de Resumo */
-    .summary-card {
-        padding: 0.75rem;
-    }
-    .summary-card h3 {
-        font-size: 1.5rem; /* Reduzir o tamanho do número */
-    }
-    .summary-card h5 {
-        font-size: 1rem; /* Reduzir o tamanho do título */
-    }
-    .summary-card p {
-        font-size: 0.8rem; /* Reduzir o tamanho do texto */
-    }
-    .icon-wrapper {
-        width: 40px;
-        height: 40px;
-        font-size: 1.2rem;
-    }
-    .icon-wrapper i {
-        font-size: 1.2rem;
-    }
-
-    /* Produtos Mais Vendidos */
-    .best-seller-card .card-title {
-        font-size: 1.1rem;
-    }
-    .list-group-item {
-        padding: 0.5rem 0.75rem;
-    }
-    .list-group-item span.text-truncate {
-        font-size: 0.85rem;
-    }
-    .badge.rounded-pill {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.5rem;
-    }
-    .progress {
-        height: 5px;
-    }
-
-    /* Alerta de Estoque Baixo */
-    .card-header h4 {
-        font-size: 1.1rem;
-    }
-    .manufacturer-header {
-        padding: 1rem;
-    }
-    .manufacturer-header h5 {
-        font-size: 1rem;
-    }
-    .manufacturer-header small {
-        font-size: 0.7rem;
-    }
-    .manufacturer-icon {
-        width: 30px;
-        height: 30px;
-    }
-    .manufacturer-icon i {
-        font-size: 1rem;
-    }
-    .product-name {
-        font-size: 0.85rem;
-    }
-    .stock-badge {
-        font-size: 0.65rem;
-        padding: 0.2rem 0.5rem;
-    }
-    .progress-stock {
-        height: 4px;
-    }
-
-    /* Imagem "No Data" */
-    img[alt="Sem dados"] {
-        width: 80px; /* Reduzir o tamanho da imagem */
-        display: block;
-        margin: 0 auto;
-    }
-}
-
-/* Ajustes para telas muito pequenas (ex.: < 576px) */
-@media (max-width: 575.98px) {
-    h1 {
-        font-size: 1.25rem;
-    }
-    .breadcrumb {
-        font-size: 0.75rem;
-    }
-    .btn-lg {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.8rem;
-    }
-    .summary-card h3 {
-        font-size: 1.25rem;
-    }
-    .summary-card h5 {
-        font-size: 0.9rem;
-    }
-    .summary-card p {
-        font-size: 0.75rem;
-    }
-    .card-header h4 {
-        font-size: 1rem;
-    }
-}
-
-/* Adicione estes estilos ao seu CSS existente */
-.best-seller-card .list-group-item {
-    padding: 0.75rem 1rem;
-    border-left: none;
-    border-right: none;
-    transition: background-color 0.2s ease;
-}
-
-.best-seller-card .list-group-item:hover {
-    background-color: rgba(0,0,0,0.02);
-}
-
-.best-seller-card .list-group-item:first-child {
-    border-top: none;
-}
-
-.best-seller-card .list-group-item:last-child {
-    border-bottom: none;
-}
-
-.best-seller-card .badge {
-    font-size: 0.875rem;
-    padding: 0.5em 0.8em;
-}
-
-.best-seller-card .text-truncate {
-    max-width: 200px;
-}
-
-.best-seller-card .bi-box-seam {
-    font-size: 1.1rem;
-}
-</style>
-
-<div class="content">
     <?php 
     // Exibir mensagens de sessão se existirem
     if (isset($_SESSION['mensagem'])) {
@@ -382,238 +54,187 @@ try {
     }
     ?>
 
-    <h1 class="mb-4 text-dark fw-bold"><i class="bi bi-house"></i> Dashboard</h1>
-
-    <!-- Breadcrumb -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <!-- Header do Dashboard -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
+            <h1 class="mb-1 text-dark fw-bold"><i class="bi bi-speedometer2 text-primary me-2"></i>Dashboard</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Produtos</li>
+                <ol class="breadcrumb mb-0 small text-muted">
+                    <li class="breadcrumb-item"><a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>">Início</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium">Visão Geral do Estoque</li>
                 </ol>
             </nav>
         </div>
-        <div class="mt-2 mt-md-0">
-            <a href="/estoque/pages/produtos/index.php" class="btn btn-primary btn-lg">
-                <i class="bi bi-plus-lg"></i> Novo Produto
+        <div>
+            <a href="<?php echo function_exists('url') ? url('/pages/produtos/index.php') : '/pages/produtos/index.php'; ?>" class="btn btn-primary px-3 py-2 fw-medium shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Gerenciar Produtos
             </a>
         </div>
     </div>
 
-    <!-- Cards de Resumo -->
-    <div class="row mb-5">
-    <div class="col-12 col-md-6 col-lg-3 mb-4">
-    <div class="card summary-card">
-        <div class="card-body d-flex align-items-center">
-            <div class="icon-wrapper me-3">
-                <i class="bi bi-cart-check-fill"></i>
-            </div>
-            <div>
-                <h5 class="card-title">Vendas Hoje</h5>
-                <h3><?php echo $vendasHoje; ?></h3>
-                <p class="card-text">Unidades vendidas nas últimas 24h</p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="col-12 col-md-6 col-lg-3 mb-4">
-    <div class="card summary-card">
-        <div class="card-body d-flex align-items-center">
-            <div class="icon-wrapper me-3">
-                <i class="bi bi-calendar-week-fill"></i>
-            </div>
-            <div>
-                <h5 class="card-title">Vendas na Semana</h5>
-                <h3><?php echo $vendasSemana; ?></h3>
-                <p class="card-text">Unidades vendidas nos últimos 7 dias</p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="col-12 col-md-6 col-lg-3 mb-4">
-    <div class="card summary-card">
-        <div class="card-body d-flex align-items-center">
-            <div class="icon-wrapper me-3">
-                <i class="bi bi-calendar-month-fill"></i>
-            </div>
-            <div>
-                <h5 class="card-title">Vendas no Mês</h5>
-                <h3><?php echo $vendasMes; ?></h3>
-                <p class="card-text">Unidades vendidas nos últimos 30 dias</p>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="col-12 col-md-6 col-lg-3 mb-4">
-    <div class="card summary-card">
-        <div class="card-body d-flex align-items-center">
-            <div class="icon-wrapper me-3">
-                <i class="bi bi-trophy-fill"></i>
-            </div>
-            <div>
-                <h5 class="card-title">Dia com Mais Vendas</h5>
-                <h3><?php echo $diaMaisVendasNome; ?></h3>
-                <p class="card-text"><?php echo $diaMaisVendas['total'] ?? 0; ?> unidades vendidas</p>
-            </div>
-        </div>
-    </div>
-</div>
-    </div>
-
-    <!-- Produtos Mais Vendidos -->
-<div class="row mb-5">
-    <!-- Produtos Mais Vendidos (Hoje) -->
-    <div class="col-12 col-md-4 mb-4">
-        <div class="card best-seller-card">
-            <div class="card-body">
-                <h5 class="card-title">Produtos Mais Vendidos (Hoje)</h5>
-                <?php if (count($produtosVendidosHoje) > 0): ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($produtosVendidosHoje as $produto): ?>
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center flex-grow-1">
-                                    <div class="me-3">
-                                        <i class="bi bi-tag text-muted"></i>
-                                    </div>
-                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                        <?php echo htmlspecialchars($produto['name']); ?>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <span class="badge bg-primary rounded-pill">
-                                        <?php echo $produto['total']; ?> un
-                                    </span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
+    <!-- Cards de Resumo Executivo -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card kpi-success h-100 mb-0">
+                <div class="card-body">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-cart-check"></i>
                     </div>
-                <?php else: ?>
-                    <p class="text-muted mb-0">Nenhuma venda hoje</p>
-                <?php endif; ?>
+                    <div>
+                        <h5 class="card-title">Vendas Hoje</h5>
+                        <h3><?php echo $vendasHoje; ?></h3>
+                        <p class="card-text">Últimas 24 horas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100 mb-0">
+                <div class="card-body">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-calendar-week"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title">Vendas na Semana</h5>
+                        <h3><?php echo $vendasSemana; ?></h3>
+                        <p class="card-text">Últimos 7 dias</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100 mb-0">
+                <div class="card-body">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-calendar-month"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title">Vendas no Mês</h5>
+                        <h3><?php echo $vendasMes; ?></h3>
+                        <p class="card-text">Últimos 30 dias</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card kpi-warning h-100 mb-0">
+                <div class="card-body">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title">Melhor Dia</h5>
+                        <h3 class="fs-4"><?php echo $diaMaisVendasNome; ?></h3>
+                        <p class="card-text text-primary fw-semibold"><?php echo $diaMaisVendas['total'] ?? 0; ?> vendas registradas</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Produtos Mais Vendidos (Semana) -->
-    <div class="col-12 col-md-4 mb-4">
-        <div class="card best-seller-card">
-            <div class="card-body">
-                <h5 class="card-title">Produtos Mais Vendidos (Semana)</h5>
-                <?php if (count($produtosVendidosSemana) > 0): ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($produtosVendidosSemana as $produto): ?>
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center flex-grow-1">
-                                    <div class="me-3">
-                                        <i class="bi bi-tag text-muted"></i>
-                                    </div>
-                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                        <?php echo htmlspecialchars($produto['name']); ?>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <span class="badge bg-primary rounded-pill">
-                                        <?php echo $produto['total']; ?> un
-                                    </span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted mb-0">Nenhuma venda esta semana</p>
-                <?php endif; ?>
+    <!-- Gráficos -->
+    <div class="row g-3 mb-4">
+        <!-- Gráfico de Evolução de Vendas -->
+        <div class="col-12 col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Evolução de Vendas (30 Dias)</h5>
+                </div>
+                <div class="card-body position-relative p-3" style="min-height: 290px; height: 290px;">
+                    <canvas id="chartVendasDiarias"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfico de Top Produtos -->
+        <div class="col-12 col-lg-4">
+             <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-trophy text-warning me-2"></i>Top 5 Produtos (Mês)</h5>
+                </div>
+                <div class="card-body position-relative p-3" style="min-height: 290px; height: 290px;">
+                    <canvas id="chartTopProdutos"></canvas>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- Produtos Mais Vendidos (Mês) -->
-    <div class="col-12 col-md-4 mb-4">
-        <div class="card best-seller-card">
-            <div class="card-body">
-                <h5 class="card-title">Produtos Mais Vendidos (Mês)</h5>
-                <?php if (count($produtosMaisVendidosMes) > 0): ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($produtosMaisVendidosMes as $produto): ?>
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center flex-grow-1">
-                                    <div class="me-3">
-                                        <i class="bi bi-tag text-muted"></i>
-                                    </div>
-                                    <div class="text-truncate" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                        <?php echo htmlspecialchars($produto['name']); ?>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <span class="badge bg-primary rounded-pill">
-                                        <?php echo $produto['total']; ?> un
-                                    </span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted mb-0">Nenhuma venda este mês</p>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
 
     <!-- Alerta de Estoque Baixo -->
-    <div class="card border-danger mb-4">
-        <div class="card-header bg-danger text-white d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <h4 class="mb-0">Alertas de Estoque Baixo</h4>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger text-white d-flex align-items-center justify-content-between py-3 rounded-top flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <h4 class="mb-0 fs-5 fw-bold">Alertas de Estoque Crítico</h4>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-light text-danger fw-semibold" data-bs-toggle="modal" data-bs-target="#modalNotificacoes" title="Abrir Central de Notificações">
+                    <i class="bi bi-bell-fill me-1"></i> Ver Notificações no Modal
+                </button>
+                <span class="badge bg-white text-danger fw-bold">
+                    <?= count($estoqueBaixo); ?> item(ns) requerem atenção
+                </span>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body bg-light">
             <div class="row">
-                <?php
-                $fabricantes = [
-                    ['nome' => 'Biobalance', 'dados' => $estoqueBaixoBiobalance, 'cor' => '#445d6b', 'icone' => 'leaf-fill'],
-                    ['nome' => 'Nutrify', 'dados' => $estoqueBaixoNutrify, 'cor' => '#18a085', 'icone' => 'droplet-fill'],
-                    ['nome' => 'Gauer', 'dados' => $estoqueBaixoGauer, 'cor' => '#9b62ef', 'icone' => 'shield-fill'],
-                    ['nome' => 'Bloken', 'dados' => $estoqueBaixoBloken, 'cor' => '#ffff84', 'icone' => 'capsule'],
-                    ['nome' => 'Stem', 'dados' => $estoqueBaixoStem, 'cor' => '#26a1fe', 'icone' => 'flower1'],
-                    ['nome' => 'Equaliv', 'dados' => $estoqueBaixoEqualiv, 'cor' => '#e67e22', 'icone' => 'stars'],
-                    ['nome' => 'Divinite', 'dados' => $estoqueBaixoDivinite, 'cor' => '#fb7cbf', 'icone' => 'heart-fill']
-                ];
-
-                foreach ($fabricantes as $fabricante):
-                    if (!empty($fabricante['dados'])):
-                ?>
+                <?php if (!empty($estoqueBaixoPorFabricante)): ?>
+                    <?php foreach ($estoqueBaixoPorFabricante as $fabData): ?>
                     <div class="col-12 col-md-6 col-lg-4 mb-4">
-                        <div class="manufacturer-card h-100">
-                            <div class="manufacturer-header" style="background-color: <?php echo $fabricante['cor']; ?>">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="manufacturer-icon me-3">
-                                        <i class="bi bi-<?php echo $fabricante['icone']; ?>"></i>
+                        <div class="manufacturer-card h-100 bg-white shadow-sm border">
+                            <div class="manufacturer-header p-3 text-white" style="background-color: <?= $fabData['cor']; ?>;">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <div class="d-flex align-items-center">
+                                        <?php if (!empty($fabData['logo_url'])): ?>
+                                        <img src="<?= url($fabData['logo_url']); ?>" alt="<?= htmlspecialchars($fabData['nome']); ?>" class="rounded-circle me-2 bg-white p-1" style="width: 32px; height: 32px; object-fit: cover;">
+                                        <?php else: ?>
+                                        <i class="bi bi-building me-2 fs-5"></i>
+                                        <?php endif; ?>
+                                        <h5 class="mb-0 fw-bold text-truncate" style="max-width: 180px;" title="<?= htmlspecialchars($fabData['nome']); ?>">
+                                            <?= htmlspecialchars($fabData['nome']); ?>
+                                        </h5>
                                     </div>
-                                    <h5 class="mb-0"><?php echo $fabricante['nome']; ?></h5>
+                                    <span class="badge bg-light text-dark">
+                                        <?= count($fabData['produtos']); ?> produto(s)
+                                    </span>
                                 </div>
-                                <small class="text-white-50">
-                                    <?php echo count($fabricante['dados']); ?> produto(s) com estoque baixo
-                                </small>
+                                <div class="small d-flex gap-2 text-white-50 mt-1">
+                                    <?php if ($fabData['total_zerados'] > 0): ?>
+                                    <span class="badge bg-danger text-white">
+                                        <i class="bi bi-x-circle me-1"></i><?= $fabData['total_zerados']; ?> esgotado(s)
+                                    </span>
+                                    <?php endif; ?>
+                                    <?php if ($fabData['total_baixo'] > 0): ?>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-circle me-1"></i><?= $fabData['total_baixo']; ?> em alerta
+                                    </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 <div class="list-group list-group-flush">
-                                    <?php foreach ($fabricante['dados'] as $produto): ?>
-                                        <div class="list-group-item product-item">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span class="product-name" title="<?php echo htmlspecialchars($produto['name']); ?>">
-                                                    <?php echo htmlspecialchars($produto['name']); ?>
+                                    <?php foreach ($fabData['produtos'] as $produto): 
+                                        $isZerado = ((int)$produto['stock'] === 0);
+                                    ?>
+                                        <div class="list-group-item product-item border-bottom pb-2 pt-2">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="product-name fw-medium text-dark text-truncate me-2" title="<?= htmlspecialchars($produto['name']); ?>">
+                                                    <?= htmlspecialchars($produto['name']); ?>
                                                 </span>
-                                                <span class="stock-badge <?php echo $produto['stock'] == 0 ? 'bg-danger' : 'bg-warning'; ?>">
-                                                    <?php echo $produto['stock']; ?> un
+                                                <?php if ($isZerado): ?>
+                                                <span class="badge bg-danger text-white text-nowrap">
+                                                    <i class="bi bi-slash-circle me-1"></i>Esgotado (0 un)
                                                 </span>
+                                                <?php else: ?>
+                                                <span class="badge bg-warning text-dark text-nowrap">
+                                                    <?= $produto['stock']; ?> un (Mín: <?= $produto['min_stock']; ?>)
+                                                </span>
+                                                <?php endif; ?>
                                             </div>
-                                            <div class="progress-stock">
-                                                <div class="progress-bar <?php echo $produto['stock'] == 0 ? 'bg-danger' : 'bg-warning'; ?>" 
+                                            <!-- Barra de nível de estoque -->
+                                            <div class="progress" style="height: 5px;">
+                                                <div class="progress-bar <?= $isZerado ? 'bg-danger' : 'bg-warning'; ?>" 
                                                      role="progressbar" 
-                                                     style="width: <?php echo ($produto['stock'] / ($produto['min_stock'] * 2)) * 100; ?>%" 
-                                                     aria-valuenow="<?php echo $produto['stock']; ?>" 
-                                                     aria-valuemin="0" 
-                                                     aria-valuemax="<?php echo $produto['min_stock']; ?>">
+                                                     style="width: <?= $isZerado ? 100 : min((($produto['stock'] / max($produto['min_stock'] * 2, 1)) * 100), 100); ?>%">
                                                 </div>
                                             </div>
                                         </div>
@@ -622,14 +243,39 @@ try {
                             </div>
                         </div>
                     </div>
-                <?php 
-                    endif;
-                endforeach; 
-                ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                        <h4 class="mt-3 text-muted">Estoque Normalizado!</h4>
+                        <p class="text-muted">Nenhum produto com estoque zerado ou abaixo do estoque mínimo.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-</div>
+
+<!-- Chart.js Libraries (Vendor local com fallback CDN) -->
+<script src="<?php echo function_exists('url') ? url('/assets/js/vendor/chart.umd.min.js') : '/assets/js/vendor/chart.umd.min.js'; ?>"></script>
+<script src="<?php echo function_exists('url') ? url('/assets/js/vendor/chartjs-plugin-datalabels.min.js') : '/assets/js/vendor/chartjs-plugin-datalabels.min.js'; ?>"></script>
+<script src="<?php echo function_exists('url') ? url('/assets/js/dashboard.js') : '/assets/js/dashboard.js'; ?>"></script>
+<script>
+    (function() {
+        function renderCharts() {
+            const vendasDiarias = <?php echo json_encode($vendasDiarias ?? []); ?>;
+            const topProdutos = <?php echo json_encode($produtosMaisVendidosMes ?? []); ?>;
+            if (typeof initDashboardCharts === 'function') {
+                initDashboardCharts(vendasDiarias, topProdutos);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', renderCharts);
+        } else {
+            renderCharts();
+        }
+    })();
+</script>
 
 <?php
 // Incluir rodapé
