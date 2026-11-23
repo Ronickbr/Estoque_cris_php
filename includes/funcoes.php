@@ -24,27 +24,80 @@ function ehAdmin() {
 function verificarLogin() {
     if (!estaLogado()) {
         $currentPath = $_SERVER['REQUEST_URI'];
-        // Store the full path including /estoque prefix
         $_SESSION['redirect_after_login'] = $currentPath;
-        if (!headers_sent()) {
-            header('Location: /estoque/login.php');
-            exit;
-        } else {
-            echo '<script>window.location.href = "/estoque/login.php";</script>';
-            exit;
-        }
+        redirect('/login.php');
     }
 }
 
 // Redirecionar usuário não administrador
 function verificarAdmin() {
     if (!ehAdmin()) {
-        if (!headers_sent()) {
-            header('Location: /estoque/index.php');
+        $_SESSION['mensagem'] = mensagem('danger', 'Acesso restrito a administradores.');
+        redirect('/index.php');
+    }
+}
+
+// Gerar ou recuperar token CSRF da sessão
+function gerarCsrfToken() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Retornar campo input hidden com token CSRF
+function campoCsrf() {
+    $token = htmlspecialchars(gerarCsrfToken(), ENT_QUOTES, 'UTF-8');
+    return '<input type="hidden" name="csrf_token" value="' . $token . '">';
+}
+
+// Validar token CSRF recebido via POST ou cabeçalho HTTP
+function verificarCsrfToken($token = null) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if ($token === null) {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    }
+    if (empty($token) || empty($_SESSION['csrf_token'])) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// Exigir método POST e token CSRF válido para operações de escrita/destrutivas
+function exigirCsrf($redirectUrl = null) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verificarCsrfToken()) {
+        http_response_code(403);
+        $_SESSION['mensagem'] = mensagem('danger', 'Requisição não autorizada ou token de segurança inválido/expirado.');
+        
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+               || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+        
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido ou ausente.']);
+            exit;
+        }
+        
+        if ($redirectUrl && !headers_sent()) {
+            header("Location: $redirectUrl");
+            exit;
+        } elseif (!headers_sent() && !empty($_SERVER['HTTP_REFERER'])) {
+            header("Location: " . $_SERVER['HTTP_REFERER']);
             exit;
         } else {
-            echo '<script>window.location.href = "/estoque/index.php";</script>';
-            exit;
+            $defaultUrl = (defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '') . '/index.php';
+            if (!headers_sent()) {
+                header("Location: " . $defaultUrl);
+                exit;
+            } else {
+                echo '<div class="alert alert-danger">Acesso negado: Token CSRF inválido ou ausente.</div>';
+                exit;
+            }
         }
     }
 }

@@ -25,8 +25,6 @@ try {
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
-
 <style>
 /* Estilos adicionais para melhorar a responsividade */
 .table th, .table td {
@@ -175,19 +173,19 @@ include __DIR__ . '/../../includes/header.php';
     }
     ?>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-building me-2"></i>Fabricantes</h1>
+            <h1 class="mb-1 text-dark fw-bold"><i class="bi bi-building text-primary me-2"></i>Fabricantes</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Fabricantes</li>
+                <ol class="breadcrumb mb-0 small text-muted">
+                    <li class="breadcrumb-item"><a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium">Fabricantes Parceiros</li>
                 </ol>
             </nav>
         </div>
-        <div class="mt-2 mt-md-0">
-            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalNovoFabricante">
-                <i class="bi bi-plus-circle"></i> Novo Fabricante
+        <div>
+            <button type="button" class="btn btn-primary px-3 py-2 fw-medium shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoFabricante">
+                <i class="bi bi-plus-lg me-1"></i> Novo Fabricante
             </button>
         </div>
     </div>
@@ -215,7 +213,7 @@ include __DIR__ . '/../../includes/header.php';
                             <td>
                                 <div class="d-flex align-items-center">
                                     <?php if ($manufacturer['logo_url']): ?>
-                                    <img src="<?php echo htmlspecialchars($manufacturer['logo_url']); ?>" 
+                                    <img src="<?= url($manufacturer['logo_url']); ?>" 
                                          class="rounded-circle me-3" 
                                          style="width: 40px; height: 40px; object-fit: cover;" 
                                          alt="<?php echo htmlspecialchars($manufacturer['name']); ?>">
@@ -233,18 +231,17 @@ include __DIR__ . '/../../includes/header.php';
                                             data-bs-target="#modalEditarFabricante" 
                                             data-id="<?php echo $manufacturer['id']; ?>"
                                             data-name="<?php echo htmlspecialchars($manufacturer['name']); ?>"
-                                            data-logo="<?php echo htmlspecialchars($manufacturer['logo_url'] ?? ''); ?>">
+                                            data-logo="<?php echo htmlspecialchars(!empty($manufacturer['logo_url']) ? url($manufacturer['logo_url']) : ''); ?>">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <?php if ($manufacturer['total_products'] == 0): ?>
-                                    <a href="/estoque/pages/fabricantes/excluir.php?id=<?php echo $manufacturer['id']; ?>" 
-                                       class="btn btn-danger btn-sm delete-btn"
-                                       data-bs-toggle="modal" 
-                                       data-bs-target="#confirmDeleteModal" 
-                                       data-id="<?php echo $manufacturer['id']; ?>"
-                                       data-name="<?php echo htmlspecialchars($manufacturer['name']); ?>">
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                           data-bs-toggle="modal" 
+                                           data-bs-target="#confirmDeleteModal" 
+                                           data-id="<?php echo $manufacturer['id']; ?>"
+                                           data-name="<?php echo htmlspecialchars($manufacturer['name']); ?>">
                                         <i class="bi bi-trash"></i>
-                                    </a>
+                                    </button>
                                     <?php else: ?>
                                     <button type="button" class="btn btn-sm btn-danger" disabled 
                                             data-bs-toggle="tooltip" 
@@ -261,7 +258,7 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             <?php else: ?>
             <div class="text-center py-5">
-                <img src="/estoque/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
+                <img src="/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
                 <h3 class="mt-4">Nenhum fabricante encontrado</h3>
                 <p class="text-muted">Clique no botão acima para adicionar um novo fabricante.</p>
             </div>
@@ -273,7 +270,8 @@ include __DIR__ . '/../../includes/header.php';
     <div class="modal fade" id="modalNovoFabricante" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/estoque/pages/fabricantes/salvar.php" method="post" enctype="multipart/form-data">
+                <form action="<?= url('/pages/fabricantes/salvar.php'); ?>" method="post" enctype="multipart/form-data">
+                    <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                     <div class="modal-header">
                         <h5 class="modal-title">Novo Fabricante</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -301,7 +299,8 @@ include __DIR__ . '/../../includes/header.php';
     <div class="modal fade" id="modalEditarFabricante" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/estoque/pages/fabricantes/atualizar.php" method="post" enctype="multipart/form-data">
+                <form action="<?= url('/pages/fabricantes/atualizar.php'); ?>" method="post" enctype="multipart/form-data">
+                    <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                     <input type="hidden" id="editar_id" name="id">
                     <div class="modal-header">
                         <h5 class="modal-title">Editar Fabricante</h5>
@@ -343,30 +342,51 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const previewDiv = document.getElementById('preview_logo');
             if (logo) {
-                const relativePath = logo.split('/estoque/')[1] || logo;
-                previewDiv.innerHTML = `<img src="/estoque/${relativePath}" class="img-thumbnail" style="max-height: 100px;">`;
+                previewDiv.innerHTML = `<img src="${logo}" class="img-thumbnail" style="max-height: 100px;">`;
             } else {
                 previewDiv.innerHTML = '';
             }
         });
     }
 
-    // Atualizar o texto do item a ser excluído no modal de confirmação
+    // Modal de exclusão de fabricante via POST
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
     if (confirmDeleteModal) {
         confirmDeleteModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const name = button.getAttribute('data-name');
-            
             const itemToDelete = document.getElementById('itemToDelete');
-            itemToDelete.textContent = `o fabricante "${name}"`;
-            
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            confirmDeleteBtn.setAttribute('href', `/estoque/pages/fabricantes/excluir.php?id=${id}`);
+            if (itemToDelete) itemToDelete.textContent = `o fabricante "${name}"`;
+            document.getElementById('confirmDeleteId').value = id;
         });
     }
 });
 </script>
+
+<!-- Modal Confirmar Exclusão Fabricante -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="confirmDeleteForm" action="<?= url('/pages/fabricantes/excluir.php'); ?>" method="post">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
+                <input type="hidden" id="confirmDeleteId" name="id" value="">
+                <input type="hidden" id="confirmDeleteArquivo" name="arquivo" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir <strong id="itemToDelete"></strong>?</p>
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

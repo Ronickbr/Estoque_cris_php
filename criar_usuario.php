@@ -3,6 +3,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/funcoes.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['criar_usuario'])) {
+    exigirCsrf('/login.php');
     $nome = limparEntrada($_POST['novo_nome'] ?? '');
     $email = limparEntrada($_POST['novo_email'] ?? '');
     $senha = $_POST['nova_senha'] ?? '';
@@ -10,13 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['criar_usuario'])) {
 
     if (empty($nome) || empty($email) || empty($senha) || empty($nivel)) {
         $_SESSION['erro_criar_usuario'] = 'Por favor, preencha todos os campos.';
-        header('Location: /estoque/login.php');
+        header('Location: /login.php');
         exit;
     }
 
     if (!in_array($nivel, ['usuario', 'admin'])) {
         $_SESSION['erro_criar_usuario'] = 'Nível de acesso inválido.';
-        header('Location: /estoque/login.php');
+        header('Location: /login.php');
         exit;
     }
 
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['criar_usuario'])) {
         $stmtCheck->execute([$nome, $email]);
         if ($stmtCheck->fetch()) {
             $_SESSION['erro_criar_usuario'] = 'Nome ou e-mail já cadastrado.';
-            header('Location: /estoque/login.php');
+            header('Location: /login.php');
             exit;
         }
 
@@ -41,17 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['criar_usuario'])) {
         $stmtInsert->execute([$nome, $email, $senhaHash, $nivel]);
 
         $_SESSION['sucesso_criar_usuario'] = 'Usuário criado com sucesso! Faça login.';
-        header('Location: /estoque/login.php');
+        header('Location: /login.php');
         exit;
 
     } catch (PDOException $e) {
         $_SESSION['erro_criar_usuario'] = 'Erro ao criar usuário: ' . $e->getMessage();
-        header('Location: /estoque/login.php');
+        header('Location: /login.php');
         exit;
     }
 }
 
 // Redirecionar se não for POST
-header('Location: /estoque/login.php');
+header('Location: /login.php');
 exit;
 ?>

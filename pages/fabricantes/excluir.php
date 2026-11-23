@@ -5,14 +5,17 @@ require_once __DIR__ . '/../../config/database.php';
 // Verificar se usuário está logado
 verificarLogin();
 
-// Verificar se o ID foi fornecido
-if (!isset($_GET['id']) || empty($_GET['id'])) {
+$redirectUrl = url('/pages/fabricantes/index.php');
+exigirCsrf($redirectUrl);
+
+// Verificar se o ID foi fornecido via POST
+$id = $_POST['id'] ?? null;
+if (empty($id)) {
     $_SESSION['mensagem'] = mensagem('warning', 'ID de fabricante não fornecido.');
-    header('Location: /estoque/pages/fabricantes/index.php');
-    exit;
+    redirect('/pages/fabricantes/index.php');
 }
 
-$id = $_GET['id'];
+$id = limparEntrada($id);
 
 // Excluir fabricante
 try {
@@ -23,8 +26,7 @@ try {
     
     if (!$fabricante) {
         $_SESSION['mensagem'] = mensagem('warning', 'Fabricante não encontrado.');
-        header('Location: /estoque/pages/fabricantes/index.php');
-        exit;
+        redirect('/pages/fabricantes/index.php');
     }
     
     // Verificar se existem produtos associados
@@ -34,13 +36,16 @@ try {
     
     if ($totalProdutos > 0) {
         $_SESSION['mensagem'] = mensagem('warning', 'Não é possível excluir um fabricante com produtos associados.');
-        header('Location: /estoque/pages/fabricantes/index.php');
-        exit;
+        redirect('/pages/fabricantes/index.php');
     }
     
     // Remover logo se existir
-    if ($fabricante['logo_url'] && file_exists('../../' . ltrim($fabricante['logo_url'], '/'))) {
-        unlink('../../' . ltrim($fabricante['logo_url'], '/'));
+    if ($fabricante['logo_url']) {
+        $relPath = preg_replace('#^(\.\./|/)+#', '', $fabricante['logo_url']);
+        $diskPath = dirname(__DIR__, 2) . '/' . $relPath;
+        if (file_exists($diskPath) && is_file($diskPath)) {
+            @unlink($diskPath);
+        }
     }
     
     // Excluir fabricante
@@ -54,6 +59,4 @@ try {
 }
 
 // Redirecionar
-header('Location: /estoque/pages/fabricantes/index.php');
-exit;
-?>
+redirect('/pages/fabricantes/index.php');

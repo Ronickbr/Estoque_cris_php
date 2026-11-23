@@ -32,19 +32,16 @@ try {
 
 // Buscar produtos
 try {
-    $sql = "SELECT p.id, p.name, p.manufacturer_id, 
-           (COALESCE(SUM(CASE WHEN im.type = 'entrada' THEN im.quantity ELSE 0 END), 0) -
-            COALESCE(SUM(CASE WHEN im.type = 'saida' THEN im.quantity ELSE 0 END), 0)) as current_stock
+    $sql = "SELECT p.id, p.name, p.manufacturer_id, p.stock as current_stock
            FROM products p 
            LEFT JOIN manufacturers mf ON p.manufacturer_id = mf.id
-           LEFT JOIN inventory_movements im ON p.id = im.product_id
            WHERE 1=1";
     
     if ($manufacturer_id) {
         $sql .= " AND p.manufacturer_id = " . $conn->quote($manufacturer_id);
     }
     
-    $sql .= " GROUP BY p.id, p.name, p.manufacturer_id ORDER BY p.name ASC";
+    $sql .= " ORDER BY p.name ASC";
     
     $stmtProducts = $conn->query($sql);
     $products = $stmtProducts->fetchAll(PDO::FETCH_ASSOC);
@@ -103,8 +100,6 @@ try {
 // Incluir cabeçalho
 include __DIR__ . '/../../includes/header.php';
 ?>
-
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
 
 <style>
 /* Estilos adicionais para responsividade */
@@ -356,22 +351,22 @@ include __DIR__ . '/../../includes/header.php';
     ?>
 
     <!-- Cabeçalho da Página -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-file-earmark-bar-graph me-2"></i>Relatórios</h1>
+            <h1 class="mb-1 text-dark fw-bold"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Relatórios de Movimentação</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Relatórios</li>
+                <ol class="breadcrumb mb-0 small text-muted">
+                    <li class="breadcrumb-item"><a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium">Histórico de Entradas e Saídas</li>
                 </ol>
             </nav>
         </div>
-        <div class="mt-2 mt-md-0">
-            <button type="button" class="btn btn-primary btn-lg me-2" data-bs-toggle="modal" data-bs-target="#modalMovimentacao">
-                <i class="bi bi-plus-circle"></i> Nova Movimentação
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary px-3 py-2 fw-medium shadow-sm" data-bs-toggle="modal" data-bs-target="#modalMovimentacao">
+                <i class="bi bi-plus-lg me-1"></i> Nova Movimentação
             </button>
-            <button type="button" class="btn btn-success btn-lg" id="btnExportar">
-                <i class="bi bi-file-excel"></i> Exportar para Excel
+            <button type="button" class="btn btn-outline-success px-3 py-2 fw-medium shadow-sm" id="btnExportar">
+                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
             </button>
         </div>
     </div>
@@ -384,7 +379,8 @@ include __DIR__ . '/../../includes/header.php';
                     <h5 class="modal-title" id="modalMovimentacaoLabel">Nova Movimentação de Estoque</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="formMovimentacao" action="/estoque/pages/relatorios/salvar_movimentacao.php" method="POST">
+                <form id="formMovimentacao" action="<?= url('/pages/relatorios/salvar_movimentacao.php'); ?>" method="POST">
+                    <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                     <div class="modal-body">
                         <div id="linhasMovimentacao">
                             <!-- Template para linha de movimentação -->
@@ -497,7 +493,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div class="col-12">
                         <button type="submit" name="filtrar" value="1" class="btn btn-primary me-2">Filtrar</button>
-                        <a href="/estoque/pages/relatorios/index.php" class="btn btn-outline-secondary">Limpar Filtros</a>
+                        <a href="<?= url('/pages/relatorios/index.php'); ?>" class="btn btn-outline-secondary">Limpar Filtros</a>
                     </div>
                 </div>
             </form>
@@ -599,7 +595,7 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             <?php else: ?>
             <div class="text-center py-5">
-                <img src="/estoque/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
+                <img src="<?= function_exists('url') ? url('/assets/img/no-data.svg') : '/assets/img/no-data.svg'; ?>" alt="Sem dados" style="width: 120px; opacity: 0.5;">
                 <h3 class="mt-4">Nenhuma movimentação encontrada</h3>
                 <p class="text-muted">Tente ajustar os filtros para um período diferente.</p>
             </div>
@@ -613,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exportar para Excel
     document.getElementById('btnExportar').addEventListener('click', function() {
         // Redirecionar para página de exportação com os mesmos filtros
-        let url = '/estoque/pages/relatorios/exportar.php?';
+        let url = '<?= url('/pages/relatorios/exportar.php'); ?>?';
         url += 'data_inicio=' + document.getElementById('data_inicio').value;
         url += '&data_fim=' + document.getElementById('data_fim').value;
         

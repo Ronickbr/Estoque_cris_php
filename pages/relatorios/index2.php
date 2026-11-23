@@ -96,7 +96,7 @@ try {
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
+<link href="/assets/css/style.css" rel="stylesheet">
 
 <div class="content">
     <!-- Exibir mensagens de sessão se existirem -->
@@ -113,7 +113,7 @@ include __DIR__ . '/../../includes/header.php';
             <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-file-earmark-bar-graph me-2"></i>Relatórios</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/index.php">Dashboard</a></li>
                     <li class="breadcrumb-item active">Relatórios</li>
                 </ol>
             </nav>
@@ -136,7 +136,7 @@ include __DIR__ . '/../../includes/header.php';
                     <h5 class="modal-title" id="modalMovimentacaoLabel">Nova Movimentação de Estoque</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="formMovimentacao" action="/estoque/pages/relatorios/salvar_movimentacao.php" method="POST">
+                <form id="formMovimentacao" action="/pages/relatorios/salvar_movimentacao.php" method="POST">
                     <div class="modal-body">
                         <div id="linhasMovimentacao">
                             <!-- Template para linha de movimentação -->
@@ -249,7 +249,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div class="col-12">
                         <button type="submit" name="filtrar" value="1" class="btn btn-primary">Filtrar</button>
-                        <a href="/estoque/pages/relatorios/index.php" class="btn btn-outline-secondary">Limpar Filtros</a>
+                        <a href="/pages/relatorios/index.php" class="btn btn-outline-secondary">Limpar Filtros</a>
                     </div>
                 </div>
             </form>
@@ -351,7 +351,7 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             <?php else: ?>
             <div class="text-center py-5">
-                <img src="/estoque/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
+                <img src="/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
                 <h3 class="mt-4">Nenhuma movimentação encontrada</h3>
                 <p class="text-muted">Tente ajustar os filtros para um período diferente.</p>
             </div>
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exportar para Excel
     document.getElementById('btnExportar').addEventListener('click', function() {
         // Redirecionar para página de exportação com os mesmos filtros
-        let url = '/estoque/pages/relatorios/exportar.php?';
+        let url = '/pages/relatorios/exportar.php?';
         url += 'data_inicio=' + document.getElementById('data_inicio').value;
         url += '&data_fim=' + document.getElementById('data_fim').value;
         

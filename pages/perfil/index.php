@@ -16,11 +16,16 @@ try {
     
     if (!$usuario) {
         $_SESSION['mensagem'] = mensagem('danger', 'Usuário não encontrado.');
-        header('Location: /estoque/index.php');
+        header('Location: /index.php');
         exit;
     }
 } catch(PDOException $e) {
     $_SESSION['mensagem'] = mensagem('danger', 'Erro ao buscar dados do usuário: ' . $e->getMessage());
+}
+
+// Validação CSRF global para submissões POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    exigirCsrf('/pages/perfil/index.php');
 }
 
 // Processar atualização de dados pessoais
@@ -51,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['atualizar_dados'])) {
                 $_SESSION['mensagem'] = mensagem('success', 'Dados atualizados com sucesso!');
                 // Atualizar dados na sessão
                 $_SESSION['usuario_nome'] = $nome;
-                header('Location: /estoque/pages/perfil/index.php');
+                header('Location: /pages/perfil/index.php');
                 exit;
             }
         } catch(PDOException $e) {
@@ -91,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['alterar_senha'])) {
                 $stmtUpdateSenha->execute([$novaSenhaHash, $usuario_id]);
                 
                 $_SESSION['mensagem'] = mensagem('success', 'Senha alterada com sucesso!');
-                header('Location: /estoque/pages/perfil/index.php');
+                header('Location: /pages/perfil/index.php');
                 exit;
             }
         } catch(PDOException $e) {
@@ -136,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['alterar_email'])) {
                     
                     $_SESSION['mensagem'] = mensagem('success', 'Email atualizado com sucesso!');
                     $_SESSION['usuario_email'] = $novo_email;
-                    header('Location: /estoque/pages/perfil/index.php');
+                    header('Location: /pages/perfil/index.php');
                     exit;
                 }
             }
@@ -149,8 +154,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['alterar_email'])) {
 // Incluir cabeçalho
 include __DIR__ . '/../../includes/header.php';
 ?>
-
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
 
 <style>
 /* Estilos adicionais para responsividade */
@@ -265,13 +268,13 @@ include __DIR__ . '/../../includes/header.php';
             <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-person-circle me-2"></i>Meu Perfil</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= url('/index.php'); ?>">Dashboard</a></li>
                     <li class="breadcrumb-item active">Meu Perfil</li>
                 </ol>
             </nav>
         </div>
         <div class="mt-2 mt-md-0">
-            <a href="/estoque/index.php" class="btn btn-secondary btn-lg">
+            <a href="<?= url('/index.php'); ?>" class="btn btn-secondary btn-lg">
                 <i class="bi bi-arrow-left"></i> Voltar para Dashboard
             </a>
         </div>
@@ -287,7 +290,8 @@ include __DIR__ . '/../../includes/header.php';
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="/estoque/pages/perfil/index.php" method="post">
+                    <form action="<?= url('/pages/perfil/index.php'); ?>" method="post">
+                        <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                         <div class="mb-3">
                             <label for="nome" class="form-label">Nome</label>
                             <input type="text" class="form-control" id="nome" name="nome" value="<?php echo htmlspecialchars($usuario['nome']); ?>" required>
@@ -317,7 +321,8 @@ include __DIR__ . '/../../includes/header.php';
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="/estoque/pages/perfil/index.php" method="post">
+                    <form action="<?= url('/pages/perfil/index.php'); ?>" method="post">
+                        <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                         <div class="mb-3">
                             <label for="email_atual" class="form-label">Email Atual</label>
                             <input type="email" class="form-control" value="<?php echo htmlspecialchars($usuario['email']); ?>" readonly>
@@ -352,7 +357,8 @@ include __DIR__ . '/../../includes/header.php';
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="/estoque/pages/perfil/index.php" method="post">
+                    <form action="<?= url('/pages/perfil/index.php'); ?>" method="post">
+                        <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                         <div class="mb-3">
                             <label for="senha_atual" class="form-label">Senha Atual</label>
                             <input type="password" class="form-control" id="senha_atual" name="senha_atual" required>

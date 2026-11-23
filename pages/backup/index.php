@@ -34,8 +34,6 @@ function formatBytes($bytes, $precision = 2) {
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
-
 <style>
 /* Estilos adicionais para melhorar a responsividade e centralização */
 .alert {
@@ -202,19 +200,19 @@ include __DIR__ . '/../../includes/header.php';
     ?>
 
     <!-- Cabeçalho da Página -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-database-fill-check me-2"></i>Backup e Restauração</h1>
+            <h1 class="mb-1 text-dark fw-bold"><i class="bi bi-database-fill-check text-primary me-2"></i>Backup e Restauração</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Backup</li>
+                <ol class="breadcrumb mb-0 small text-muted">
+                    <li class="breadcrumb-item"><a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium">Segurança e Dados</li>
                 </ol>
             </nav>
         </div>
-        <div class="mt-2 mt-md-0">
-            <a href="/estoque/index.php" class="btn btn-secondary btn-lg">
-                <i class="bi bi-arrow-left"></i> Voltar para Dashboard
+        <div>
+            <a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>" class="btn btn-outline-secondary px-3 py-2 fw-medium shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
             </a>
         </div>
     </div>
@@ -236,7 +234,7 @@ include __DIR__ . '/../../includes/header.php';
                         <i class="bi bi-info-circle me-2"></i> O processo pode levar alguns segundos dependendo do tamanho do banco de dados.
                     </div>
                     
-                    <a href="/estoque/pages/backup/gerar_backup.php" class="btn btn-success btn-lg">
+                    <a href="/pages/backup/gerar_backup.php" class="btn btn-success btn-lg">
                         <i class="bi bi-download"></i> Gerar Backup
                     </a>
                 </div>
@@ -259,7 +257,8 @@ include __DIR__ . '/../../includes/header.php';
                         <i class="bi bi-exclamation-triangle me-2"></i> <strong>Aviso!</strong> A restauração apagará todos os dados atuais do sistema. Certifique-se de ter um backup recente antes de continuar.
                     </div>
                     
-                    <form action="/estoque/pages/backup/restaurar_backup.php" method="post" enctype="multipart/form-data" class="mt-3">
+                    <form action="<?= function_exists('url') ? url('/pages/backup/restaurar_backup.php') : '/pages/backup/restaurar_backup.php'; ?>" method="post" enctype="multipart/form-data" class="mt-3">
+                        <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                         <div class="mb-3">
                             <label for="arquivo_backup" class="form-label">Arquivo de Backup (SQL ou JSON)</label>
                             <input type="file" class="form-control" id="arquivo_backup" name="arquivo_backup" accept=".sql,.json" required>
@@ -287,13 +286,12 @@ include __DIR__ . '/../../includes/header.php';
                     <h5 class="mb-0 font-weight-bold text-primary">
                         <i class="bi bi-list-ul me-2"></i>Backups Disponíveis
                     </h5>
-                    <a href="/estoque/pages/backup/limpar_backups.php" 
-                       class="btn btn-sm btn-outline-danger mt-2 mt-md-0"
-                       data-delete
-                       data-item-name="todos os backups antigos"
-                       title="Limpar Backups Antigos">
+                    <button type="button" class="btn btn-sm btn-outline-danger mt-2 mt-md-0"
+                            data-delete
+                            data-action="<?= url('/pages/backup/limpar_backups.php'); ?>"
+                            data-item-name="todos os backups antigos">
                         <i class="bi bi-trash"></i> Limpar Backups Antigos
-                    </a>
+                    </button>
                 </div>
                 <div class="card-body p-0">
                     <?php
@@ -332,24 +330,33 @@ include __DIR__ . '/../../includes/header.php';
                                     <td><?php echo date('d/m/Y H:i:s', $data); ?></td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="/estoque/pages/backup/download_backup.php?arquivo=<?php echo urlencode($nome); ?>" 
+                                            <a href="<?= function_exists('url') ? url('/pages/backup/download_backup.php') : '/pages/backup/download_backup.php'; ?>?arquivo=<?php echo urlencode($nome); ?>" 
                                                class="btn btn-primary btn-sm"
                                                data-bs-toggle="tooltip" 
                                                title="Download">
                                                 <i class="bi bi-download"></i>
                                             </a>
-                                            <a href="/estoque/pages/backup/restaurar_backup.php?arquivo=<?php echo urlencode($nome); ?>" 
+                                            <button type="button"
                                                class="btn btn-warning btn-sm restaurar-btn"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#confirmRestoreModal"
+                                               data-action="<?= url('/pages/backup/restaurar_arquivo.php'); ?>"
+                                               data-arquivo="<?php echo htmlspecialchars($nome); ?>"
+                                               data-item-name="o backup <?php echo htmlspecialchars($nome); ?>"
                                                data-bs-toggle="tooltip" 
                                                title="Restaurar backup">
                                                 <i class="bi bi-arrow-counterclockwise"></i>
-                                            </a>
-                                            <a href="/estoque/pages/backup/excluir_backup.php?arquivo=<?php echo urlencode($nome); ?>" 
+                                            </button>
+                                            <button type="button"
                                                class="btn btn-danger btn-sm excluir-btn"
-                                               data-bs-toggle="tooltip" 
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#confirmDeleteModal"
+                                               data-action="<?= url('/pages/backup/excluir_backup.php'); ?>"
+                                               data-arquivo="<?php echo htmlspecialchars($nome); ?>"
+                                               data-item-name="o backup <?php echo htmlspecialchars($nome); ?>"
                                                title="Excluir">
                                                 <i class="bi bi-trash"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -359,13 +366,64 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <?php else: ?>
                     <div class="text-center py-5">
-                        <img src="/estoque/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
+                        <img src="/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
                         <h3 class="mt-4">Nenhum backup disponível</h3>
                         <p class="text-muted">Clique no botão acima para gerar um novo backup.</p>
                     </div>
                     <?php endif; ?>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Exclusão de Backup -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="confirmDeleteForm" action="<?= url('/pages/backup/excluir_backup.php'); ?>" method="post">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
+                <input type="hidden" id="confirmDeleteId" name="id" value="">
+                <input type="hidden" id="confirmDeleteArquivo" name="arquivo" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir <strong id="itemToDelete"></strong>?</p>
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Restauração de Backup -->
+<div class="modal fade" id="confirmRestoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="confirmRestoreForm" action="<?= url('/pages/backup/restaurar_arquivo.php'); ?>" method="post">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
+                <input type="hidden" id="confirmRestoreArquivo" name="arquivo" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Confirmar Restauração</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja restaurar <strong id="itemToRestore"></strong>?</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i><strong>Atenção!</strong> Todos os dados atuais serão substituídos pelo backup selecionado.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

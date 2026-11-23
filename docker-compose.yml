@@ -8,6 +8,7 @@ services:
     depends_on:
       - db
     environment:
+      - BASE_PATH=/
       - MYSQL_HOST=db
       - MYSQL_USER=estoque_user
       - MYSQL_PASSWORD=estoque_password

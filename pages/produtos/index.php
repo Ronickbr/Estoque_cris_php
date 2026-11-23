@@ -66,8 +66,6 @@ try {
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link href="/estoque/assets/css/style.css" rel="stylesheet">
-
 <style>
 /* Estilos existentes */
 .product-card {
@@ -333,19 +331,19 @@ include __DIR__ . '/../../includes/header.php';
     ?>
 
     <!-- Cabeçalho da Página -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="mb-0 text-dark fw-bold"><i class="bi bi-box-seam me-2"></i>Gestão de Produtos</h1>
+            <h1 class="mb-1 text-dark fw-bold"><i class="bi bi-box-seam text-primary me-2"></i>Gestão de Produtos</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/estoque/index.php">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Produtos</li>
+                <ol class="breadcrumb mb-0 small text-muted">
+                    <li class="breadcrumb-item"><a href="<?php echo function_exists('url') ? url('/index.php') : '/index.php'; ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item active text-dark fw-medium">Catálogo de Produtos</li>
                 </ol>
             </nav>
         </div>
-        <div class="mt-2 mt-md-0">
-            <a href="/estoque/pages/produtos/novo.php" class="btn btn-primary btn-lg" id="btnNovoProduto">
-                <i class="bi bi-plus-lg"></i> Novo Produto
+        <div>
+            <a href="<?php echo function_exists('url') ? url('/pages/produtos/novo.php') : '/pages/produtos/novo.php'; ?>" class="btn btn-primary px-3 py-2 fw-medium shadow-sm" id="btnNovoProduto">
+                <i class="bi bi-plus-lg me-1"></i> Novo Produto
             </a>
         </div>
     </div>
@@ -393,7 +391,7 @@ include __DIR__ . '/../../includes/header.php';
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="bi bi-search"></i> Filtrar
                     </button>
-                    <a href="/estoque/pages/produtos/index.php" class="btn btn-outline-secondary">
+                    <a href="<?php echo function_exists('url') ? url('/pages/produtos/index.php') : '/pages/produtos/index.php'; ?>" class="btn btn-outline-secondary">
                         <i class="bi bi-x-circle"></i> Limpar
                     </a>
                 </div>
@@ -416,7 +414,7 @@ include __DIR__ . '/../../includes/header.php';
                 <?php if (empty($products)): ?>
                 <tr>
                     <td colspan="4" class="text-center py-5">
-                        <img src="/estoque/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
+                        <img src="/assets/img/no-data.svg" alt="Sem dados" style="width: 120px; opacity: 0.5;">
                         <h3 class="mt-4">Nenhum produto encontrado</h3>
                         <p class="text-muted">Tente ajustar os filtros ou adicionar um novo produto.</p>
                     </td>
@@ -430,7 +428,7 @@ include __DIR__ . '/../../includes/header.php';
                     <td>
                         <div class="d-flex align-items-center">
                             <?php if ($product['image_url']): ?>
-                            <img src="/estoque/<?php echo ltrim($product['image_url'], '/'); ?>" 
+                            <img src="<?= url($product['image_url']); ?>" 
                                  class="product-image me-3"
                                  alt="<?php echo htmlspecialchars($product['name']); ?>">
                             <?php else: ?>
@@ -447,7 +445,7 @@ include __DIR__ . '/../../includes/header.php';
                     <td>
                         <div class="d-flex align-items-center">
                             <?php if ($product['logo_url']): ?>
-                            <img src="/estoque/<?php echo ltrim($product['logo_url'], '/'); ?>" 
+                            <img src="<?= url($product['logo_url']); ?>" 
                                  class="manufacturer-logo me-2"
                                  alt="<?php echo htmlspecialchars($product['manufacturer_name']); ?>">
                             <?php endif; ?>
@@ -456,17 +454,25 @@ include __DIR__ . '/../../includes/header.php';
                     </td>
                     <td>
                         <?php 
-                        $stockStatus = $product['stock'] <= $product['min_stock'] ? 'danger' : 
-                                    ($product['stock'] <= ($product['min_stock'] * 2) ? 'warning' : 'success');
+                        $isZerado = ((int)$product['stock'] === 0);
+                        $isBaixo = ((int)$product['stock'] <= (int)$product['min_stock']);
+                        $stockStatus = $isZerado ? 'danger' : ($isBaixo ? 'warning text-dark' : 'success');
+                        $progressColor = $isZerado ? 'bg-danger' : ($isBaixo ? 'bg-warning' : 'bg-success');
                         ?>
                         <div class="d-flex align-items-center">
-                            <span class="badge bg-<?php echo $stockStatus; ?> me-2 stock-badge">
-                                <?php echo $product['stock']; ?>
+                            <span class="badge bg-<?php echo $stockStatus; ?> me-2 stock-badge fw-bold">
+                                <?php if ($isZerado): ?>
+                                    0 (Esgotado)
+                                <?php elseif ($isBaixo): ?>
+                                    <?php echo $product['stock']; ?> (Baixo)
+                                <?php else: ?>
+                                    <?php echo $product['stock']; ?>
+                                <?php endif; ?>
                             </span>
-                            <div class="stock-progress flex-grow-1">
-                                <div class="progress-bar bg-<?php echo $stockStatus; ?>" 
+                            <div class="stock-progress flex-grow-1" style="min-width: 60px;">
+                                <div class="progress-bar <?php echo $progressColor; ?>" 
                                      role="progressbar" 
-                                     style="width: <?php echo min(($product['stock'] / ($product['min_stock'] * 3)) * 100, 100); ?>%">
+                                     style="width: <?php echo $isZerado ? 100 : min(($product['stock'] / max($product['min_stock'] * 2, 1)) * 100, 100); ?>%">
                                 </div>
                             </div>
                         </div>
@@ -480,14 +486,13 @@ include __DIR__ . '/../../includes/header.php';
                                     title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <a href="/estoque/pages/produtos/excluir.php?id=<?php echo $product['id']; ?>" 
-                               class="btn btn-danger btn-sm delete-btn"
+                            <button type="button" class="btn btn-danger btn-sm"
                                data-bs-toggle="modal" 
                                data-bs-target="#confirmDeleteModal" 
                                data-id="<?php echo $product['id']; ?>"
                                data-name="<?php echo htmlspecialchars($product['name']); ?>">
                                 <i class="bi bi-trash"></i>
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -502,7 +507,8 @@ include __DIR__ . '/../../includes/header.php';
 <div class="modal fade" id="modalNovoProduto" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="/estoque/pages/produtos/salvar.php" method="post" enctype="multipart/form-data">
+            <form action="<?= url('/pages/produtos/salvar.php'); ?>" method="post" enctype="multipart/form-data">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                 <div class="modal-header">
                     <h5 class="modal-title">Novo Produto</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -560,7 +566,8 @@ include __DIR__ . '/../../includes/header.php';
 <div class="modal fade" id="modalEditarProduto" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="/estoque/pages/produtos/atualizar.php" method="post" enctype="multipart/form-data">
+            <form action="<?= url('/pages/produtos/atualizar.php'); ?>" method="post" enctype="multipart/form-data">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
                 <input type="hidden" id="editar_id" name="id">
                 <div class="modal-header">
                     <h5 class="modal-title">Editar Produto</h5>
@@ -621,6 +628,31 @@ include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/footer.php'; 
 ?>
 
+<!-- Modal Confirmar Exclusão Produto -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="confirmDeleteForm" action="<?= url('/pages/produtos/excluir.php'); ?>" method="post">
+                <?= function_exists('campoCsrf') ? campoCsrf() : ''; ?>
+                <input type="hidden" id="confirmDeleteId" name="id" value="">
+                <input type="hidden" id="confirmDeleteArquivo" name="arquivo" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir <strong id="itemToDelete"></strong>?</p>
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>Esta ação não poderá ser desfeita. O histórico de movimentações também será removido.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Atualizar botão "Novo Produto" para abrir modal
@@ -652,27 +684,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Atualizar preview da imagem considerando o prefixo /estoque
             const previewDiv = document.getElementById('preview_image');
             if (image && !image.includes('box-seam')) {
-                const relativePath = image.split('/estoque/')[1] || image;
-                previewDiv.innerHTML = `<img src="/estoque/${relativePath}" class="img-thumbnail" style="max-height: 100px;">`;
+                previewDiv.innerHTML = `<img src="${image}" class="img-thumbnail" style="max-height: 100px;">`;
             } else {
                 previewDiv.innerHTML = '';
             }
         });
     }
 
-    // Atualizar o texto do item a ser excluído no modal de confirmação
+    // Modal de exclusão de produto via POST
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
     if (confirmDeleteModal) {
         confirmDeleteModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const name = button.getAttribute('data-name');
-            
-            const itemToDelete = document.getElementById('itemToDelete');
-            itemToDelete.textContent = `o produto "${name}"`;
-            
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            confirmDeleteBtn.setAttribute('href', `/estoque/pages/produtos/excluir.php?id=${id}`);
+            document.getElementById('itemToDelete').textContent = `o produto "${name}"`;
+            document.getElementById('confirmDeleteId').value = id;
         });
     }
 

@@ -3,51 +3,47 @@ require_once __DIR__ . '/../../includes/funcoes.php';
 require_once __DIR__ . '/../../config/database.php';
 
 verificarLogin();
+verificarAdmin();
+
+$redirectUrl = (defined('BASE_PATH') ? rtrim(BASE_PATH, '/') : '') . '/pages/backup/index.php';
+exigirCsrf($redirectUrl);
 
 try {
     $arquivo = null;
     $nomeArquivo = null;
 
     // Verificar se é um upload de arquivo ou uma restauração direta
-    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['arquivo_backup'])) {
-        // Caso de upload de arquivo
+    if (isset($_FILES['arquivo_backup']) && !empty($_FILES['arquivo_backup']['tmp_name'])) {
         $arquivo = $_FILES['arquivo_backup']['tmp_name'];
         $nomeArquivo = $_FILES['arquivo_backup']['name'];
-    } elseif ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['arquivo'])) {
-        // Caso de restauração direta de um arquivo existente
-        if (!isset($_GET['arquivo']) || empty($_GET['arquivo'])) {
-            $_SESSION['mensagem'] = mensagem('danger', 'Arquivo não especificado');
-            header('Location: /estoque/pages/backup/index.php');
-            exit;
-        }
-
-        $nomeArquivo = basename($_GET['arquivo']);
-        $arquivo = '../../backups/' . $nomeArquivo;
+    } elseif (!empty($_POST['arquivo'])) {
+        $nomeArquivo = basename($_POST['arquivo']);
+        $arquivo = dirname(__DIR__, 2) . '/backups/' . $nomeArquivo;
         
         if (!file_exists($arquivo)) {
-            $_SESSION['mensagem'] = mensagem('danger', 'Arquivo não encontrado');
-            header('Location: /estoque/pages/backup/index.php');
+            $_SESSION['mensagem'] = mensagem('danger', 'Arquivo não encontrado.');
+            header("Location: $redirectUrl");
             exit;
         }
     } else {
-        throw new Exception('Requisição inválida');
+        throw new Exception('Requisição inválida: arquivo não fornecido.');
     }
 
     $tipo = strtolower(pathinfo($nomeArquivo, PATHINFO_EXTENSION));
 
-    if ($tipo != 'sql') {
+    if ($tipo !== 'sql') {
         throw new Exception('Formato de arquivo inválido. Use apenas arquivos .sql');
     }
 
     // Desativar verificação de chaves estrangeiras
     $conn->exec('SET FOREIGN_KEY_CHECKS=0');
 
-    // Array com as tabelas na ordem correta de exclusão (respeitando as dependências)
+    // Array com as tabelas na ordem correta de exclusão
     $tabelas = [
-        'inventory_movements',  // Primeiro as tabelas dependentes
+        'inventory_movements',
         'products',
         'manufacturers',
-        'usuarios'             // Adicionado usuarios à lista
+        'usuarios'
     ];
 
     // Dropar todas as tabelas existentes
@@ -55,7 +51,6 @@ try {
         try {
             $conn->exec("DROP TABLE IF EXISTS `$tabela`");
         } catch (PDOException $e) {
-            // Ignora erros se a tabela não existir
             continue;
         }
     }
@@ -77,7 +72,6 @@ try {
             try {
                 $conn->exec($comando);
             } catch (PDOException $e) {
-                // Se houver erro em algum comando, registra e continua
                 error_log("Erro ao executar comando SQL: " . $e->getMessage());
                 error_log("Comando: " . $comando);
                 continue;
@@ -89,14 +83,12 @@ try {
     $conn->exec('SET FOREIGN_KEY_CHECKS=1');
 
     $_SESSION['mensagem'] = mensagem('success', 'Backup restaurado com sucesso!');
-    header('Location: /estoque/pages/backup/index.php');
+    header("Location: $redirectUrl");
     exit;
 
 } catch(Exception $e) {
-    // Garantir que as chaves estrangeiras sejam reativadas mesmo em caso de erro
     $conn->exec('SET FOREIGN_KEY_CHECKS=1');
     $_SESSION['mensagem'] = mensagem('danger', 'Erro ao restaurar o backup: ' . $e->getMessage());
-    header('Location: /estoque/pages/backup/index.php');
+    header("Location: $redirectUrl");
     exit;
 }
-?>

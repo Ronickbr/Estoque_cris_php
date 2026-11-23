@@ -8,7 +8,7 @@ verificarLogin();
 // Verificar se o arquivo foi especificado
 if (!isset($_GET['arquivo']) || empty($_GET['arquivo'])) {
     $_SESSION['mensagem'] = mensagem('danger', 'Arquivo não especificado');
-    header('Location: /estoque/pages/backup/index.php');
+    header('Location: /pages/backup/index.php');
     exit;
 }
 
@@ -19,7 +19,7 @@ $caminhoArquivo = '../../backups/' . $arquivo;
 // Verificar se o arquivo existe
 if (!file_exists($caminhoArquivo)) {
     $_SESSION['mensagem'] = mensagem('danger', 'Arquivo não encontrado');
-    header('Location: /estoque/pages/backup/index.php');
+    header('Location: /pages/backup/index.php');
     exit;
 }
 
@@ -27,7 +27,7 @@ if (!file_exists($caminhoArquivo)) {
 $extensao = pathinfo($caminhoArquivo, PATHINFO_EXTENSION);
 if (!in_array(strtolower($extensao), ['sql', 'json'])) {
     $_SESSION['mensagem'] = mensagem('danger', 'Tipo de arquivo não permitido');
-    header('Location: /estoque/pages/backup/index.php');
+    header('Location: /pages/backup/index.php');
     exit;
 }
 

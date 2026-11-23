@@ -4,26 +4,19 @@ require_once __DIR__ . '/../../config/database.php';
 
 // Verifica se usuário está logado
 verificarLogin();
-
-// Verifica se é uma requisição POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $_SESSION['mensagem'] = mensagem('danger', 'Método inválido.');
-    header('Location: /estoque/pages/produtos/index.php');
-    exit;
-}
+exigirCsrf('/pages/produtos/index.php');
 
 // Recebe e limpa os dados do formulário
-$id = limparEntrada($_POST['id']);
-$name = limparEntrada($_POST['name']);
-$manufacturer_id = limparEntrada($_POST['manufacturer_id']);
-$stock = limparEntrada($_POST['stock']);
-$min_stock = limparEntrada($_POST['min_stock']);
+$id = limparEntrada($_POST['id'] ?? '');
+$name = limparEntrada($_POST['name'] ?? '');
+$manufacturer_id = limparEntrada($_POST['manufacturer_id'] ?? '');
+$stock = limparEntrada($_POST['stock'] ?? '');
+$min_stock = limparEntrada($_POST['min_stock'] ?? '');
 
 // Validações básicas
-if (empty($id) || empty($name) || empty($manufacturer_id) || !is_numeric($stock) || !is_numeric($min_stock)) {
-    $_SESSION['mensagem'] = mensagem('danger', 'Todos os campos obrigatórios devem ser preenchidos corretamente.');
-    header('Location: /estoque/pages/produtos/index.php');
-    exit;
+if (empty($id) || empty($name) || empty($manufacturer_id) || !is_numeric($stock) || !is_numeric($min_stock) || $stock < 0 || $min_stock < 0) {
+    $_SESSION['mensagem'] = mensagem('danger', 'Todos os campos obrigatórios devem ser preenchidos corretamente com valores válidos.');
+    redirect('/pages/produtos/index.php');
 }
 
 try {
@@ -43,34 +36,37 @@ try {
 
     // Processa upload da imagem se existir
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../../uploads/produtos/';
+        $upload_dir = dirname(__DIR__, 2) . '/uploads/produtos/';
         
         // Cria o diretório se não existir
         if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
+            mkdir($upload_dir, 0755, true);
         }
 
         // Gera um nome único para o arquivo
         $file_extension = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (!in_array($file_extension, $allowed_types)) {
+            throw new Exception('Tipo de arquivo não permitido. Apenas jpg, jpeg, png, gif e webp são aceitos.');
+        }
+
         $new_filename = uniqid() . '.' . $file_extension;
         $upload_path = $upload_dir . $new_filename;
-
-        // Verifica o tipo de arquivo
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-        if (!in_array($file_extension, $allowed_types)) {
-            throw new Exception('Tipo de arquivo não permitido. Apenas jpg, jpeg, png e gif são aceitos.');
-        }
 
         // Move o arquivo para o diretório de uploads
         if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
             throw new Exception('Erro ao fazer upload da imagem.');
         }
 
-        $image_url = 'uploads/produtos/' . $new_filename;
+        $image_url = '/uploads/produtos/' . $new_filename;
 
         // Remove a imagem antiga se existir
-        if ($produto_atual['image_url'] && file_exists('../../' . $produto_atual['image_url'])) {
-            unlink('../../' . $produto_atual['image_url']);
+        if (!empty($produto_atual['image_url'])) {
+            $relPath = preg_replace('#^(\.\./|/)+#', '', $produto_atual['image_url']);
+            $oldDiskPath = dirname(__DIR__, 2) . '/' . $relPath;
+            if (file_exists($oldDiskPath) && is_file($oldDiskPath)) {
+                unlink($oldDiskPath);
+            }
         }
     }
 
@@ -87,11 +83,12 @@ try {
     if ($diferenca_estoque != 0) {
         $tipo = $diferenca_estoque > 0 ? 'entrada' : 'saida';
         $quantidade = abs($diferenca_estoque);
+        $usuario_id = $_SESSION['usuario_id'] ?? '1';
         
         $sql = "INSERT INTO inventory_movements (id, product_id, type, quantity, notes, created_at, created_by) 
                 VALUES (UUID(), ?, ?, ?, ?, NOW(), ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$id, $tipo, $quantidade, 'Atualização de estoque', $_SESSION['usuario_id']]);
+        $stmt->execute([$id, $tipo, $quantidade, 'Atualização de estoque', $usuario_id]);
     }
 
     // Commit na transação
@@ -100,7 +97,9 @@ try {
 
 } catch (Exception $e) {
     // Se houver erro, faz rollback
-    $conn->rollBack();
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
 
     // Se houver nova imagem já enviada, tenta removê-la
     if (isset($upload_path) && file_exists($upload_path)) {
@@ -110,6 +109,4 @@ try {
     $_SESSION['mensagem'] = mensagem('danger', 'Erro ao atualizar produto: ' . $e->getMessage());
 }
 
-// Redireciona de volta para a lista de produtos
-header('Location: /estoque/pages/produtos/index.php');
-exit;
+redirect('/pages/produtos/index.php');

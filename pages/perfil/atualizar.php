@@ -4,11 +4,8 @@ require_once __DIR__ . '/../../config/database.php';
 
 require_once __DIR__ . '/../../includes/header.php';
 
-if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    $_SESSION['mensagem'] = mensagem('warning', 'Método de acesso inválido.');
-    header('Location: /estoque/pages/perfil/index.php');
-    exit;
-}
+verificarLogin();
+exigirCsrf('/pages/perfil/index.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome = $_POST['nome'] ?? '';
@@ -17,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($nome) || empty($email)) {
         $_SESSION['mensagem'] = mensagem('danger', 'Todos os campos são obrigatórios.');
-        header('Location: /estoque/pages/perfil/index.php');
+        header('Location: /pages/perfil/index.php');
         exit;
     }
 
@@ -32,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($stmt->execute()) {
             $_SESSION['mensagem'] = mensagem('success', 'Perfil atualizado com sucesso!');
-            header('Location: /estoque/pages/perfil/index.php');
+            header('Location: /pages/perfil/index.php');
             exit;
         } else {
             echo "Erro ao cadastrar usuário.";
@@ -42,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-header('Location: /estoque/pages/perfil/index.php');
+header('Location: /pages/perfil/index.php');
 exit;
 ?>
 

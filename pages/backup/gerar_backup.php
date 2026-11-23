@@ -57,7 +57,7 @@ try {
 
 } catch(PDOException $e) {
     $_SESSION['mensagem'] = mensagem('danger', 'Erro ao gerar backup: ' . $e->getMessage());
-    header('Location: /estoque/pages/backup/index.php');
+    header('Location: /pages/backup/index.php');
     exit;
 }
 ?>
